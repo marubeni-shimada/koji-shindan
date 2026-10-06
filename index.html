@@ -88,6 +88,13 @@ table.lst.mini th,table.lst.mini td{padding:7px 10px;font-size:12.5px}
 .sec h2{font-size:13px;font-weight:800;margin-bottom:10px;color:var(--sub)}
 .ke{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;font-variant-numeric:tabular-nums;line-height:2.2}
 .ke .op{color:var(--sub);font-weight:800}.ke .lbl{color:var(--sub);font-size:11px}.ke .num{font-weight:800}.ke .res{font-weight:900;font-size:16px}
+.rcalc{display:flex;flex-direction:column;gap:9px}
+.rstep{display:flex;gap:10px;align-items:flex-start;font-size:13px}
+.rstep .rn{flex:none;width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:var(--sub)}
+.rstep .rsub{color:var(--ink);font-variant-numeric:tabular-nums;margin-top:3px}
+.rstep .rnote{color:var(--sub);font-size:11.5px;margin-top:3px;line-height:1.5}
+.rstep.rtot{background:var(--bg);border-radius:9px;padding:9px 11px}.rstep.rtot .rn{background:var(--bad);color:#fff;border-color:var(--bad)}
+.rfoot{color:var(--sub);font-size:11px;margin-top:10px;line-height:1.6}
 .ke.hl{background:var(--bg);border-radius:9px;padding:8px 11px}.ke .ga{color:var(--ga)}.ke .gp{color:var(--ok)}.ke .gp.neg{color:var(--bad)}
 .factor{display:flex;align-items:center;gap:10px;margin:8px 0}
 .factor .rk{width:20px;height:20px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:11px;color:var(--sub);flex-shrink:0}
@@ -149,6 +156,7 @@ table.lst.mini th,table.lst.mini td{padding:7px 10px;font-size:12.5px}
     <div class="amt"><div class="l" id="bigamtLab">本来の粗利（着地見込み）</div><div class="big" id="bigamt"></div><div class="vs" id="vsamt"></div></div></div>
   <div class="nums" id="dnums"></div>
   <div class="sec"><h2>💰 回収の状況（台帳ベース）</h2><div id="recBody"></div></div>
+  <div class="sec" id="risokuSec" style="display:none"><h2>🏦 利息（借入金利）の計算根拠</h2><div id="risokuBody"></div></div>
   <div class="sec"><h2>📅 月ごと・累計の原価　<span style="font-weight:400;color:var(--sub);font-size:11px">行をクリックでその月の内訳へ</span></h2><div style="overflow-x:auto"><table class="lst mini" id="mtbl"></table></div></div>
   <div class="sec"><h2>💸 費目の内訳</h2><div class="mtab" id="dmonth"></div><div class="hint" id="fscope" style="font-size:11.5px;color:var(--sub);margin-bottom:10px"></div><div id="factors"></div>
     <div style="font-size:11px;color:var(--sub);font-weight:800;margin:12px 0 4px">お金の行き先（請負ぜんぶ・累計）</div>
@@ -434,6 +442,24 @@ function renderDetail(i){
   document.getElementById('recBody').innerHTML=
     '<div class="rbar"><div class="rs" style="width:'+Math.max(2,recD/Szei*100)+'%;background:var(--ok)" title="入金 '+yen(recD)+'">入金 '+yen(recD)+'</div><div class="rs" style="width:'+Math.max(2,mishu/Szei*100)+'%;background:var(--bad)" title="未収 '+yen(mishu)+'">未収 '+yen(mishu)+'</div></div>'
     +'<div style="display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--sub);margin-top:6px"><span>請負(税込) <b style="color:var(--ink)">'+yen(Szei)+'</b></span><span>回収率 <b style="color:var(--ink)">'+pct(a.kaishu)+'</b></span><span>工期 <b style="color:var(--ink)">'+(a.start.getMonth()+1)+'/'+a.start.getDate()+'〜'+(a.fin.getMonth()+1)+'/'+a.fin.getDate()+(a.done?'（完成）':'（進捗'+pct(a.timeR,0)+'）')+'</b></span></div>';
+  // 利息の計算根拠（利息込みモード時のみ）
+  const risSec=document.getElementById('risokuSec');
+  if(withKin){ risSec.style.display='';
+    const fmtD=d=>d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate();
+    const recNet=Math.round(a.rec/1.1),rawY=(a.asof-a.start)/(365.25*24*3600*1000),capped=!(rawY>=0)||rawY>5;
+    let rb;
+    if(a.tateka>0){
+      rb='<div class="rcalc">'
+        +'<div class="rstep"><span class="rn">①</span><div><b>立替額</b>（自腹で回している運転資金）<div class="rsub">累計原価 '+yen(a.C)+' − 回収額(税抜) '+yen(recNet)+'（入金'+yen(a.rec)+'÷1.1）＝ <b>'+yen(a.tateka)+'円</b></div><div class="rnote">公共工事は前受金で一部もらえるが、原価が回収を上回った差額は自腹（借入）で立替えている。この立替に金利がかかる。</div></div></div>'
+        +'<div class="rstep"><span class="rn">②</span><div><b>経過年数</b>（着工〜基準日）<div class="rsub">'+fmtD(a.start)+' 〜 '+fmtD(a.asof)+' ＝ <b>'+a.years.toFixed(2)+'年</b>'+(capped?' <span style="color:var(--bad)">（受注日が未設定/異常のため上限5年を適用）</span>':'')+'</div></div></div>'
+        +'<div class="rstep"><span class="rn">③</span><div><b>年利</b> ＝ <b>'+pct(kinri(),1)+'</b>（上部で変更可）</div></div>'
+        +'<div class="rstep rtot"><span class="rn">＝</span><div><b>利息</b> ＝ '+yen(a.tateka)+' × '+pct(kinri(),1)+' × '+a.years.toFixed(2)+'年 ＝ <b style="color:var(--bad)">'+yen(a.risoku)+'円</b></div></div>'
+        +'</div><div class="rfoot">※ 実際の立替残高は日々変わるため、これは「現在の立替額 × 全経過年数」で出した<b>概算</b>（実際よりやや多めに出やすい）。この利息を本来の粗利から差し引いています。</div>';
+    } else {
+      rb='<div class="rcalc"><div class="rstep"><span class="rn">✓</span><div><b>この工事は立替なし ＝ 利息 0円</b><div class="rsub">回収額(税抜 '+yen(recNet)+') が累計原価('+yen(a.C)+') 以上。前受金・入金で原価をまかなえているため、借入利息は発生しません。</div></div></div></div>';
+    }
+    document.getElementById('risokuBody').innerHTML=rb;
+  } else risSec.style.display='none';
   // 月ごと・累計の原価（行クリックでその月の内訳に切替）
   let cum=0;
   let mh='<thead><tr><th class="l">月</th><th>当月原価</th><th>累計原価</th>'+ELS.map(k=>'<th>'+k+'</th>').join('')+'</tr></thead><tbody>';
