@@ -112,7 +112,9 @@ table.lst.mini th,table.lst.mini td{padding:7px 10px;font-size:12.5px}
     <span class="chip" id="mChip" style="display:none"></span>
     <span class="chip" id="gasState" style="display:none"></span>
     <span class="revtog" id="revTog" title="売上の基準を切替（社内経費13%は常に請負金額×13%）"><button data-rb="contract" class="on">請負ベース</button><button data-rb="uriage">累計売上ベース</button></span>
-    <label style="color:var(--sub);font-size:12px">社内経費率</label><input type="number" id="rate" value="13" step="0.5" min="0" max="50" style="width:66px"> %
+    <span class="revtog" id="kinTog" title="利息（借入金利）を粗利に含めるか切替"><button data-ki="0" class="on">利息なし</button><button data-ki="1">利息込み</button></span>
+    <label style="color:var(--sub);font-size:12px">社内経費率</label><input type="number" id="rate" value="13" step="0.5" min="0" max="50" style="width:60px"> %
+    <label style="color:var(--sub);font-size:12px" id="kinriLab" title="立替金（原価−回収）に年利を掛け、経過年数ぶんの利息を粗利から別途引きます">利息 年利</label><input type="number" id="kinri" value="2" step="0.1" min="0" max="20" style="width:58px"> %
     <span style="color:var(--sub);font-size:11.5px">変えると全工事が再計算</span></div>
   <div class="mtab" id="aggTabs"><button data-v="list" class="on">📋 工事一覧</button><button data-v="tanto">👷 担当者別</button><button data-v="dept">🏢 部門別</button><button data-v="client">🤝 得意先別</button><button data-v="bunseki">📊 分析</button></div>
   <div class="fbar" id="fbar">
@@ -194,7 +196,8 @@ const D=s=>{s=String(s).slice(0,10);return new Date(+s.slice(0,4),+s.slice(5,7)-
 const COL={'外注費':'var(--c-out)','労務費':'var(--c-rou)','材料費':'var(--c-mat)','リース費':'var(--c-lea)','経費':'var(--c-exp)'};
 const ELS=['外注費','労務費','材料費','リース費','経費'];
 function rate(){return (+document.getElementById('rate').value||0)/100;}
-let aggView='list',fSector='',fDept='',fTanto='',fState='',sortKey='watch',revBase='contract',fQ='';
+function kinri(){const el=document.getElementById('kinri');return el?(+el.value||0)/100:0;}   // 借入年利
+let aggView='list',fSector='',fDept='',fTanto='',fState='',sortKey='watch',revBase='contract',fQ='',withKin=false;
 function isDone(p){ if(p.kansei)return true; try{return D(p.asof)>=D(p.fin);}catch(e){return false;} }
 function calc(p){
   const r=rate(),contract=p.S,C=p.C;
@@ -206,20 +209,28 @@ function calc(p){
   const timeR=done?1:Math.min(1,Math.max(.03,(asof-start)/(fin-start)));
   const B=p.B,Bok=B>0 && B<contract*3;   // 実行予算が妥当に入っているか（台帳で未設定=0 の工事がある）
   const costR=Bok?C/B:null;        // 予算なしは消化率を出さない
-  // 着地見込み：累計売上ベース＝累計売上−累計原価−社内経費（実現済み）。請負ベース＝完成は実績確定／未成は予算どおりと原価ペースの中間（予算なしは原価ペースのみ）
-  const land=useUri?(S-C-GA):(done?(S-C-GA):(Bok?Math.round(((S-B-GA)+(S-(C/timeR)-GA))/2):Math.round(S-(C/timeR)-GA)));
+  // 回収（台帳ベース）。立替＝自腹で回している運転資金（公共は前受金で一部回収）
+  const Szei=p.Szei||Math.round(S*1.1),rec=p.rec||0,mishu=(p.mishu!=null?p.mishu:Math.max(0,Szei-rec)),kaishu=Szei?rec/Szei:0;
+  const tateka=Math.max(0,C-rec/1.1);   // 立替（累計原価 − 入金の税抜換算）＝自腹で回している分
+  // 利息（借入金利）：立替額 × 年利 × 経過年数（着工〜基準日・概算）。社内経費13%とは別立てで粗利から引く
+  // 経過年数は上限5年でガード（受注日が空/異常=1899年等に化けると巨大化するため）
+  let years=(asof-start)/(365.25*24*3600*1000);
+  if(!(years>=0)||years>5) years=Math.max(0,Math.min(5,(fin-start)/(365.25*24*3600*1000)||0));
+  years=Math.max(0,Math.min(5,years));
+  const risoku=Math.round(tateka*kinri()*years);
+  // 着地見込み（利息を引く前）→ 利息控除後＝本来の粗利
+  const landGross=useUri?(S-C-GA):(done?(S-C-GA):(Bok?Math.round(((S-B-GA)+(S-(C/timeR)-GA))/2):Math.round(S-(C/timeR)-GA)));
+  const kinOn=withKin&&risoku>0;
+  const land=landGross-(kinOn?risoku:0);   // 利息込みモードのみ利息を控除
   // 目標：台帳の目標純利益が妥当(請負の60%未満)ならそれ、なければ予算から算出（予算なしは目標なし）
   const tgt=(p.mokuhyoJun>0&&p.mokuhyoJun<S*0.6)?p.mokuhyoJun:(Bok?(S-B-GA):null);
   const hasTgt=tgt!=null;
   const diff=hasTgt?land-tgt:0,tgtRate=hasTgt&&S?tgt/S:0,landRate=S?land/S:0;
   const cls=land<0?'bad':(hasTgt?(land<tgt*0.7?'warn':'ok'):(landRate<0.03?'warn':'ok'));
-  // 回収（台帳ベース）
-  const Szei=p.Szei||Math.round(S*1.1),rec=p.rec||0,mishu=(p.mishu!=null?p.mishu:Math.max(0,Szei-rec)),kaishu=Szei?rec/Szei:0;
-  const tateka=Math.max(0,C-rec/1.1);   // 立替（累計原価 − 入金の税抜換算）＝自腹で回している分
   // 回収アラート：①完成なのに未収あり＝取りっぱぐれ最優先 ②立替が原価の4割超＝資金注意
   const recBad=done&&mishu>1000, recWarn=!recBad&&tateka>0&&tateka>C*0.4;
   const recCls=recBad?'bad':recWarn?'warn':'ok';
-  return{p,r,S,contract,useUri,B,GA,C,Bok,hasTgt,start,fin,asof,done,timeR,costR,tgt,land,diff,tgtRate,landRate,cls,Szei,rec,mishu,kaishu,tateka,recBad,recWarn,recCls};
+  return{p,r,S,contract,useUri,B,GA,C,Bok,hasTgt,start,fin,asof,done,timeR,costR,tgt,land,landGross,risoku,kinOn,years,diff,tgtRate,landRate,cls,Szei,rec,mishu,kaishu,tateka,recBad,recWarn,recCls};
 }
 /* ===== 一覧 ===== */
 function renderList(){
@@ -306,7 +317,7 @@ function renderList(){
   document.getElementById('lfoot').innerHTML=(revBase==='uriage'
     ?'※ <b>累計売上ベース</b>：粗利＝累計売上−仕入（仕入＝累計原価＋社内経費）＝実現済みの粗利。変更増額も反映。'
     :'※ <b>請負ベース</b>：粗利＝請負金額−仕入（仕入＝原価＋社内経費）。着地見込み＝「予算どおり」と「原価ペース」の中間。')
-    +'目標＝台帳の目標純利益。社内経費＝常に請負×'+pct(rate(),1)+'。担当者＝台帳の現場代理人。<span class="samp">（サンプル）</span>は見本データ。';
+    +'目標＝台帳の目標純利益。社内経費＝常に請負×'+pct(rate(),1)+'。'+(withKin?'<b>利息込み</b>＝立替（原価−回収）×年利'+pct(kinri(),1)+'×経過年数を別途控除（概算・最大5年）。':'利息なし（上の「利息込み」で切替）。')+'担当者＝台帳の現場代理人。<span class="samp">（サンプル）</span>は見本データ。';
 }
 /* ===== 分析ビュー（予実／粗利率バラつき／原価内訳） ===== */
 const ECOL=COL;
@@ -370,7 +381,7 @@ function renderDetail(i){
   document.getElementById('hero').className='hero '+a.cls;
   document.getElementById('sig').textContent=sig;document.getElementById('st').textContent=stt;
   document.getElementById('hsub').innerHTML=a.hasTgt?('目標 '+man(tgt)+'円（'+pct(a.tgtRate)+'）に対して'):'目標（実行予算）は台帳未設定 ― 原価ペースでの着地見込み';
-  document.getElementById('bigamtLab').textContent=a.useUri?'本来の粗利（実績・累計売上ベース）':'本来の粗利（着地見込み）';
+  document.getElementById('bigamtLab').textContent=(a.useUri?'本来の粗利（実績・累計売上ベース）':'本来の粗利（着地見込み）')+(withKin?'・利息込み':'');
   document.getElementById('bigamt').textContent=(land<0?'▲':'')+man(Math.abs(land))+'円';
   document.getElementById('vsamt').innerHTML=!a.hasTgt?'':(diff>=0?'<span class="up">目標 +'+man(diff)+'円</span>':'<span class="down">目標 ▲'+man(-diff)+'円</span>');
   const cmp=(v,c)=>'<div class="cmp '+c+'">'+v+'</div>';
@@ -383,10 +394,12 @@ function renderDetail(i){
    +'<div class="n"><div class="lab">原価消化 / 工期</div><div class="v">'+(a.costR==null?'—':pct(a.costR,0))+'<span style="font-size:15px;color:var(--sub)"> / '+pct(a.timeR,0)+'</span></div>'+cmp(t3[1],t3[0])+'</div>'
    +'<div class="n"><div class="lab">社内経費（×'+pct(a.r,a.r*100%1?1:0)+'）</div><div class="v" style="color:var(--ga)">'+man(GA)+'</div>'+cmp('請負×'+pct(a.r,a.r*100%1?1:0),'')+'</div>';
   const tot=C+GA;
-  document.getElementById('keishiki').innerHTML=
-    '<div class="ke"><span class="lbl">社内経費</span><span class="num">'+yen(a.contract)+'</span><span class="lbl">請負</span><span class="op">×</span><span class="num">'+pct(a.r,a.r*100%1?1:0)+'</span><span class="op">＝</span><span class="res ga">'+yen(GA)+'円</span></div>'
-   +'<div class="ke"><span class="lbl">合計仕入</span><span class="num">'+yen(C)+'</span><span class="lbl">原価</span><span class="op">＋</span><span class="num ga">'+yen(GA)+'</span><span class="lbl">社内経費</span><span class="op">＝</span><span class="res">'+yen(tot)+'円</span></div>'
-   +'<div class="ke hl"><span class="lbl">本来の粗利</span><span class="num">'+yen(S)+'</span><span class="lbl">'+revLbl+'</span><span class="op">−</span><span class="num">'+yen(tot)+'</span><span class="lbl">合計仕入</span><span class="op">＝</span><span class="res gp'+((S-tot)<0?' neg':'')+'">'+((S-tot)<0?'▲':'')+yen(Math.abs(S-tot))+'円</span><span class="lbl">※現時点</span></div>';
+  const nowNet=(S-tot)-(a.kinOn?a.risoku:0);   // 現時点の本来の粗利（利息込みモードのみ利息控除）
+  let keH='<div class="ke"><span class="lbl">社内経費</span><span class="num">'+yen(a.contract)+'</span><span class="lbl">請負</span><span class="op">×</span><span class="num">'+pct(a.r,a.r*100%1?1:0)+'</span><span class="op">＝</span><span class="res ga">'+yen(GA)+'円</span></div>'
+   +'<div class="ke"><span class="lbl">合計仕入</span><span class="num">'+yen(C)+'</span><span class="lbl">原価</span><span class="op">＋</span><span class="num ga">'+yen(GA)+'</span><span class="lbl">社内経費</span><span class="op">＝</span><span class="res">'+yen(tot)+'円</span></div>';
+  if(a.kinOn){ keH+='<div class="ke"><span class="lbl">利息</span><span class="num">'+yen(a.tateka)+'</span><span class="lbl">立替</span><span class="op">×</span><span class="num">年利'+pct(kinri(),1)+'</span><span class="op">×</span><span class="num">'+a.years.toFixed(1)+'年</span><span class="op">＝</span><span class="res" style="color:var(--bad)">'+yen(a.risoku)+'円</span></div>'; }
+  keH+='<div class="ke hl"><span class="lbl">本来の粗利</span><span class="num">'+yen(S)+'</span><span class="lbl">'+revLbl+'</span><span class="op">−</span><span class="num">'+yen(tot)+'</span><span class="lbl">仕入</span>'+(a.kinOn?('<span class="op">−</span><span class="num">'+yen(a.risoku)+'</span><span class="lbl">利息</span>'):'')+'<span class="op">＝</span><span class="res gp'+(nowNet<0?' neg':'')+'">'+(nowNet<0?'▲':'')+yen(Math.abs(nowNet))+'円</span><span class="lbl">※現時点</span></div>';
+  document.getElementById('keishiki').innerHTML=keH;
   const el=p.el,C2=C||1,ext=Object.entries(p.py||{}).filter(([k])=>!['社内原価','現金払い'].includes(k)).sort((x,y)=>y[1]-x[1]),top=ext[0]||['-',0];
   // 月セレクタ：累計／各月で費目・支払先を切替
   const msF=(p.months||[]).slice().sort((x,y)=>D(x.end)-D(y.end));
@@ -415,7 +428,7 @@ function renderDetail(i){
   if((el['外注費']||0)/C2>0.6)act+=' 外注が原価の'+pct((el['外注費']||0)/C2,0)+'（'+esc(top[0])+'集中）＝<b>出来高査定と請求の月次突合</b>が最優先。';
   if(a.costR!=null){ if(a.costR>a.timeR)act+=' 原価が工期より先行＝<b>最終原価の見込みを今月再作成</b>。';else act+=' ペースは予算内。<b>追加・変更工事の請求漏れ</b>に注意。'; }
   document.getElementById('action').innerHTML=act;
-  document.getElementById('dfoot').innerHTML='※ 目標＝台帳の目標純利益。着地見込み＝「予算どおり」と「原価ペース」の中間。社内経費＝請負×'+pct(a.r,1)+'。';
+  document.getElementById('dfoot').innerHTML='※ 目標＝台帳の目標純利益。着地見込み＝「予算どおり」と「原価ペース」の中間。社内経費＝請負×'+pct(a.r,1)+'。'+(a.kinOn?'利息＝立替'+yen(a.tateka)+'×年利'+pct(kinri(),1)+'×'+a.years.toFixed(1)+'年＝'+yen(a.risoku)+'円を控除（概算）。':'');
   // 回収の状況（情報表示のみ・アラートなし）
   const Szei=a.Szei,recD=a.rec,mishu=a.mishu;
   document.getElementById('recBody').innerHTML=
@@ -432,7 +445,10 @@ function renderDetail(i){
 document.getElementById('list').addEventListener('click',e=>{const c=e.target.closest('[data-i]');if(c&&!e.target.closest('select,button.fclr'))openDetail(+c.dataset.i);});
 document.getElementById('back').onclick=()=>{curDetail=null;document.getElementById('detail').style.display='none';document.getElementById('list').style.display='block';renderList();scrollTo(0,0);};
 document.getElementById('more').onclick=function(){const d=document.getElementById('dd');d.classList.toggle('open');this.textContent=d.classList.contains('open')?'− 詳細を閉じる':'＋ 詳細（計算の内訳・打ち手）を見る';};
-document.getElementById('rate').oninput=renderList;
+document.getElementById('rate').oninput=()=>{renderList();if(curDetail!=null)renderDetail(curDetail);};
+document.getElementById('kinri').oninput=()=>{renderList();if(curDetail!=null)renderDetail(curDetail);};
+document.getElementById('kinTog').onclick=e=>{const b=e.target.closest('button[data-ki]');if(!b)return;withKin=b.dataset.ki==='1';document.querySelectorAll('#kinTog button').forEach(x=>x.classList.toggle('on',(x.dataset.ki==='1')===withKin));document.getElementById('kinri').style.opacity=withKin?'1':'.45';document.getElementById('kinriLab').style.opacity=withKin?'1':'.45';renderList();if(curDetail!=null)renderDetail(curDetail);};
+document.getElementById('kinri').style.opacity='.45';document.getElementById('kinriLab').style.opacity='.45';
 document.getElementById('aggTabs').onclick=e=>{const b=e.target.closest('button[data-v]');if(b){aggView=b.dataset.v;renderList();}};
 document.getElementById('revTog').onclick=e=>{const b=e.target.closest('button[data-rb]');if(!b)return;revBase=b.dataset.rb;document.querySelectorAll('#revTog button').forEach(x=>x.classList.toggle('on',x.dataset.rb===revBase));if(curDetail!=null)renderDetail(curDetail);renderList();};
 document.getElementById('fSector').onchange=e=>{fSector=e.target.value;renderList();};
