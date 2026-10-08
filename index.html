@@ -154,19 +154,32 @@ table.lst tbody tr:active{transform:scale(.996)}
 .grp.collapsed .chev{transform:rotate(-90deg)}
 .grp .gbody{transition:height .32s cubic-bezier(.2,.8,.2,1),opacity .26s ease;overflow:hidden}
 .grp.collapsed .gbody{height:0!important;opacity:0}
+.chip.yearchip{gap:8px;padding:5px 8px 5px 13px}
+.chip.yearchip .lb{color:var(--sub)}
+#fySel{font:12.5px system-ui;font-weight:700;padding:5px 26px 5px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 4.5l3 3 3-3' fill='none' stroke='%236a768f' stroke-width='1.7' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right 8px center;cursor:pointer}
+#fyCover{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin:0 0 14px;animation:fadeUp .34s both}
+#fyCover .fycT{font-size:14px;font-weight:800}
+#fyCover .fycT b{color:var(--acc);font-size:18px}
+#fyCover .fycR{color:var(--sub);font-size:11.5px;margin-left:8px;font-weight:500}
+#fyCover .fycM{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+#fyCover .fycM .m{width:38px;text-align:center;padding:5px 0;border:1px solid var(--line);border-radius:7px;font-size:11.5px;color:var(--sub);background:var(--bg)}
+#fyCover .fycM .m.on{background:var(--okbg);border-color:transparent;color:var(--ok);font-weight:800}
+#fyCover .fycM .m.off{opacity:.5}
+#fyCover .fycH{color:var(--sub);font-size:11px;margin-top:9px}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head><body><div class="wrap">
 <div id="list">
   <h1>工事台帳分析</h1><p class="lead">全工事の「請負・仕入・粗利」が一目で分かります。行をクリックで詳細診断へ。</p>
   <label class="drop" id="drop"><input type="file" id="file" accept=".xlsx" multiple>📥 ここに <b>工事台帳(要素別).xlsx</b> をドロップ（複数月・複数工事OK）<span id="dmsg"></span></label>
   <div class="bar"><span class="chip" id="cSum"></span>
-    <span class="chip" id="mChip" style="display:none"></span>
+    <span class="chip yearchip" id="mChip" style="display:none"><span class="dotcal"></span><span class="lb">対象年度</span><select id="fySel"></select></span>
     <span class="chip" id="gasState" style="display:none"></span>
     <span class="revtog" id="revTog" title="売上の基準を切替（社内経費13%は常に請負金額×13%）"><button data-rb="contract" class="on">請負ベース</button><button data-rb="uriage">累計売上ベース</button></span>
     <span class="revtog" id="kinTog" title="利息（借入金利）を粗利に含めるか切替"><button data-ki="0" class="on">利息なし</button><button data-ki="1">利息込み</button></span>
     <label style="color:var(--sub);font-size:12px">社内経費率</label><input type="number" id="rate" value="13" step="0.5" min="0" max="50" style="width:60px"> %
     <label style="color:var(--sub);font-size:12px" id="kinriLab" title="立替金（原価−回収）に年利を掛け、経過年数ぶんの利息を粗利から別途引きます">利息 年利</label><input type="number" id="kinri" value="2" step="0.1" min="0" max="20" style="width:58px"> %
     <span style="color:var(--sub);font-size:11.5px">変えると全工事が再計算</span></div>
+  <div id="fyCover" style="display:none"></div>
   <div class="mtab" id="aggTabs"><button data-v="list" class="on">📋 工事一覧</button><button data-v="tanto">👷 担当者別</button><button data-v="dept">🏢 部門別</button><button data-v="client">🤝 得意先別</button><button data-v="bunseki">📊 分析</button></div>
   <div class="fbar" id="fbar">
     <input type="search" id="fSearch" placeholder="🔍 工事名・担当・得意先で検索" style="min-width:220px">
@@ -294,14 +307,8 @@ function renderList(){
   const n={ok:0,warn:0,bad:0};A.forEach(a=>n[a.cls]++);
   const sGp=A.reduce((s,a)=>s+a.land,0);
   document.getElementById('cSum').innerHTML='全 <b>'+A.length+'</b> 工事　<span class="ok">🟢'+n.ok+'</span>　<span class="warn">🟡'+n.warn+'</span>　<span class="bad">🔴'+n.bad+'</span>　｜ 粗利 合計 <b>'+man(sGp)+'円</b>';
-  // いま入っている対象年度（6月決算＝7月〜翌6月。始まりの年で「○年度」）
-  const fySY=ym=>{const y=+String(ym).slice(0,4),m=+String(ym).slice(5,7);return (y&&m)?(m>=7?y:y-1):null;};
-  const fyset=new Set();P.forEach(p=>{const ref=p.asof||((p.months&&p.months.length)?p.months[p.months.length-1].end:'');const sy=fySY(ref);if(sy!=null)fyset.add(sy);});
-  const fyArr=[...fyset].sort((a,b)=>a-b);
-  const mChip=document.getElementById('mChip');
-  if(fyArr.length){ const label=fyArr.length===1?(fyArr[0]+'年度'):(fyArr[0]+'〜'+fyArr[fyArr.length-1]+'年度（'+fyArr.length+'年度分）');
-    mChip.innerHTML='<span class="dotcal"></span>対象年度：<b>'+label+'</b>';mChip.style.display=''; }
-  else mChip.style.display='none';
+  // 対象年度セレクタ＋取り込み月カバレッジ（6月決算＝7月〜翌6月）
+  renderFYCover();
   const rowHtml=(a,i)=>{
     const shiire=a.S-a.land;   // 仕入＝請負−粗利 なので 請負−仕入＝粗利 が成立
     const kiki='工期 '+(a.start.getMonth()+1)+'/'+a.start.getDate()+'〜'+(a.fin.getMonth()+1)+'/'+a.fin.getDate()+(a.done?'（完成）':'（進捗'+pct(a.timeR,0)+'）');
@@ -429,6 +436,27 @@ function renderBunseki(A){
 }
 /* ===== 詳細 ===== */
 let curDetail=null;
+let selFY=null;
+const FY_ORDER=[7,8,9,10,11,12,1,2,3,4,5,6];
+function fyMonthsMap(){ const map={};
+  (P||[]).forEach(p=>{ const ends=(p.months&&p.months.length)?p.months.map(m=>m.end):(p.asof?[p.asof]:[]);
+    ends.forEach(e=>{const y=+String(e).slice(0,4),m=+String(e).slice(5,7);if(!y||!m)return;const sy=m>=7?y:y-1;(map[sy]=map[sy]||new Set()).add(m);}); });
+  return map; }
+function renderFYCover(){
+  const chip=document.getElementById('mChip'),cover=document.getElementById('fyCover'),selEl=document.getElementById('fySel');
+  if(!chip||!cover||!selEl)return;
+  const map=fyMonthsMap(),fys=Object.keys(map).map(Number).sort((a,b)=>b-a);
+  if(!fys.length){ chip.style.display='none';cover.style.display='none';return; }
+  if(selFY==null||!map[selFY]) selFY=fys[0];
+  selEl.innerHTML=fys.map(y=>'<option value="'+y+'"'+(y===selFY?' selected':'')+'>'+y+'年度</option>').join('');
+  selEl.value=String(selFY);
+  chip.style.display='';
+  const loaded=map[selFY],miss=12-loaded.size;
+  cover.style.display='';
+  cover.innerHTML='<div class="fycT">入れたのは <b>'+loaded.size+'</b> ヶ月分<span class="fycR">（'+selFY+'年7月〜'+(selFY+1)+'年6月）</span></div>'
+    +'<div class="fycM">'+FY_ORDER.map(m=>'<span class="m '+(loaded.has(m)?'on':'off')+'">'+m+'月</span>').join('')+'</div>'
+    +'<div class="fycH">'+(miss?('緑＝入っている月。残り '+miss+'ヶ月分はまだ未取込（台帳をドロップすると増えます）。'):'この年度は12ヶ月そろっています。')+'</div>';
+}
 const _reduceM=matchMedia('(prefers-reduced-motion:reduce)').matches;let _animBig=false;
 function countBig(el,to){const neg=to<0,abs=Math.abs(to),fmt=v=>(neg?'▲':'')+man(v)+'円';if(_reduceM){el.textContent=fmt(abs);return;}const dur=620,t0=performance.now();(function s(now){const p=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-p,3);el.textContent=fmt(abs*e);if(p<1)requestAnimationFrame(s);})(performance.now());}
 function openDetail(i){curDetail=i;_animBig=true;document.getElementById('list').style.display='none';document.getElementById('detail').style.display='block';renderDetail(i);scrollTo(0,0);}
@@ -526,6 +554,7 @@ function renderDetail(i){
 }
 document.getElementById('list').addEventListener('click',e=>{const c=e.target.closest('[data-i]');if(c&&!e.target.closest('select,button.fclr'))openDetail(+c.dataset.i);});
 ['grpUn','grpDn'].forEach(id=>{const g=document.getElementById(id);if(!g)return;const body=g.querySelector('.gbody'),head=g.querySelector('.ghead');head.addEventListener('click',()=>{const open=g.classList.contains('collapsed');if(open){g.classList.remove('collapsed');body.style.height=body.scrollHeight+'px';body.addEventListener('transitionend',function h(){body.style.height='auto';body.removeEventListener('transitionend',h);},{once:true});}else{body.style.height=body.scrollHeight+'px';body.offsetHeight;g.classList.add('collapsed');body.style.height='0px';}});});
+(function(){const s=document.getElementById('fySel');if(s)s.addEventListener('change',e=>{selFY=+e.target.value;renderFYCover();});})();
 document.getElementById('back').onclick=()=>{curDetail=null;document.getElementById('detail').style.display='none';document.getElementById('list').style.display='block';renderList();scrollTo(0,0);};
 document.getElementById('more').onclick=function(){const d=document.getElementById('dd');d.classList.toggle('open');this.textContent=d.classList.contains('open')?'− 詳細を閉じる':'＋ 詳細（計算の内訳・打ち手）を見る';};
 document.getElementById('rate').oninput=()=>{renderList();if(curDetail!=null)renderDetail(curDetail);};
