@@ -166,12 +166,59 @@ table.lst tbody tr:active{transform:scale(.996)}
 #fyCover .fycM .m.on{background:var(--okbg);border-color:transparent;color:var(--ok);font-weight:800}
 #fyCover .fycM .m.off{opacity:.5}
 #fyCover .fycH{color:var(--sub);font-size:11px;margin-top:9px}
+.prbtn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:6px 12px;font-size:12.5px;font-weight:700;cursor:pointer}
+.prbtn:hover{border-color:var(--acc);color:var(--acc)}
+.prbtn svg{width:15px;height:15px}
+#meetingView .allbar{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-bottom:18px;display:flex;flex-wrap:wrap;gap:6px 26px;align-items:baseline}
+#meetingView .allbar .ttl{font-size:12px;color:var(--sub);width:100%}
+#meetingView .allbar .big{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}
+#meetingView .allbar .big.bad{color:var(--bad)}
+#meetingView .allbar .k{font-size:11.5px;color:var(--sub);margin-left:4px;font-weight:600}
+#meetingView .mcard{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:16px;overflow:hidden;animation:fadeUp .34s both}
+#meetingView .mhead{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+#meetingView .tanto{font-size:11px;font-weight:800;color:#fff;background:var(--acc);border-radius:999px;padding:3px 10px}
+#meetingView .cname{font-weight:800;font-size:14px}
+#meetingView .state{margin-left:auto;font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px}
+#meetingView .state.bad{color:var(--bad);background:var(--badbg)} #meetingView .state.warn{color:var(--warn);background:var(--warnbg)} #meetingView .state.ok{color:var(--ok);background:var(--okbg)}
+#meetingView .cbody{padding:15px 16px}
+#meetingView .gap{margin-bottom:12px}
+#meetingView .gap .row{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--sub);margin-bottom:5px}
+#meetingView .gap .row b{font-variant-numeric:tabular-nums}
+#meetingView .track{height:24px;border-radius:7px;background:var(--line);overflow:hidden;display:flex}
+#meetingView .track .keep{background:var(--ok);height:100%} #meetingView .track.red .keep{background:var(--bad)}
+#meetingView .track .lost{background:repeating-linear-gradient(45deg,var(--bad),var(--bad) 7px,#c53d3d 7px,#c53d3d 14px);height:100%}
+#meetingView .gaplab{display:flex;justify-content:space-between;font-size:11px;margin-top:5px}
+#meetingView .gaplab .lo{color:var(--bad);font-weight:800} #meetingView .gaplab .ke{color:var(--ok);font-weight:800}
+#meetingView .melt{display:flex;gap:11px;align-items:flex-start;background:var(--badbg);border-radius:11px;padding:11px 13px;margin-bottom:11px}
+#meetingView .melt .ic{font-size:18px;line-height:1}
+#meetingView .melt .t{font-size:12px} #meetingView .melt .t b{color:var(--bad);font-variant-numeric:tabular-nums} #meetingView .melt .t .mo{font-weight:800}
+#meetingView .move{display:flex;gap:9px;align-items:flex-start;border:1px dashed var(--ok);border-radius:11px;padding:10px 13px;background:var(--okbg)}
+#meetingView .move .ic{color:var(--ok);font-weight:800;line-height:1.3} #meetingView .move .t{font-size:12px} #meetingView .move .t b{color:var(--ok)}
+#meetingView .mmeta{color:var(--sub);font-size:11px;margin-top:9px}
+#meetingView .mempty{color:var(--sub);text-align:center;padding:30px}
+.printonly{display:none}
+@media print{
+  @page{margin:14mm}
+  body{background:#fff}
+  .drop,.fbar,#aggTabs,.revtog,#gasState,#fyCover,#watchBand,.prbtn,.back,.chev,#mChip,.lead{display:none!important}
+  .bar label,.bar input,.bar>span:last-child{display:none!important}
+  .printonly{display:block;font-size:12.5px;color:#000;border-bottom:1px solid #999;padding-bottom:6px;margin-bottom:12px;font-weight:800}
+  .wrap{max-width:none}
+  .sheet{overflow:visible;box-shadow:none;border:1px solid #bbb}
+  .grp .gbody,.grp.collapsed .gbody{height:auto!important;opacity:1!important}
+  .seclbl.ghead{cursor:auto}
+  .hero,.sec{box-shadow:none!important;break-inside:avoid}
+  table.lst tbody tr,.sec,.hero{break-inside:avoid}
+  *{animation:none!important;transition:none!important}
+}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head><body><div class="wrap">
+<div class="printonly" id="prHdr"></div>
 <div id="list">
   <h1>工事台帳分析</h1><p class="lead">全工事の「請負・仕入・粗利」が一目で分かります。行をクリックで詳細診断へ。</p>
   <label class="drop" id="drop"><input type="file" id="file" accept=".xlsx" multiple>📥 ここに <b>工事台帳(要素別).xlsx</b> をドロップ（複数月・複数工事OK）<span id="dmsg"></span></label>
   <div class="bar"><span class="chip" id="cSum"></span>
+    <button id="printBtn" class="prbtn" title="この一覧を印刷／PDFで保存"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg>印刷 / PDF</button>
     <span class="chip yearchip" id="mChip" style="display:none"><span class="dotcal"></span><span class="lb">対象年度</span><select id="fySel"></select></span>
     <span class="chip" id="gasState" style="display:none"></span>
     <span class="revtog" id="revTog" title="売上の基準を切替（社内経費13%は常に請負金額×13%）"><button data-rb="contract" class="on">請負ベース</button><button data-rb="uriage">累計売上ベース</button></span>
@@ -180,7 +227,7 @@ table.lst tbody tr:active{transform:scale(.996)}
     <label style="color:var(--sub);font-size:12px" id="kinriLab" title="立替金（原価−回収）に年利を掛け、経過年数ぶんの利息を粗利から別途引きます">利息 年利</label><input type="number" id="kinri" value="2" step="0.1" min="0" max="20" style="width:58px"> %
     <span style="color:var(--sub);font-size:11.5px">変えると全工事が再計算</span></div>
   <div id="fyCover" style="display:none"></div>
-  <div class="mtab" id="aggTabs"><button data-v="list" class="on">📋 工事一覧</button><button data-v="tanto">👷 担当者別</button><button data-v="dept">🏢 部門別</button><button data-v="client">🤝 得意先別</button><button data-v="bunseki">📊 分析</button></div>
+  <div class="mtab" id="aggTabs"><button data-v="list" class="on">📋 工事一覧</button><button data-v="tanto">👷 担当者別</button><button data-v="dept">🏢 部門別</button><button data-v="client">🤝 得意先別</button><button data-v="bunseki">📊 分析</button><button data-v="meeting">📣 会議用</button></div>
   <div class="fbar" id="fbar">
     <input type="search" id="fSearch" placeholder="🔍 工事名・担当・得意先で検索" style="min-width:220px">
     <span>絞り込み</span>
@@ -208,10 +255,11 @@ table.lst tbody tr:active{transform:scale(.996)}
   </div>
   <div id="aggView" style="display:none"><h2 class="seclbl" id="aggTitle"></h2><div class="sheet"><table class="lst" id="aggTbl"></table></div></div>
   <div id="bunsekiView" style="display:none"></div>
+  <div id="meetingView" style="display:none"></div>
   <div class="foot" id="lfoot"></div>
 </div>
 <div id="detail">
-  <button class="back" id="back">← 工事一覧へ戻る</button>
+  <button class="back" id="back">← 工事一覧へ戻る</button><button id="printBtn2" class="prbtn" style="margin-left:10px" title="この工事の詳細を印刷／PDFで保存"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg>印刷 / PDF</button>
   <div class="meta" id="meta"></div>
   <div class="hero" id="hero"><div class="sig" id="sig"></div><div class="mid"><div class="st" id="st"></div><div class="subt" id="hsub"></div></div>
     <div class="amt"><div class="l" id="bigamtLab">本来の粗利（着地見込み）</div><div class="big" id="bigamt"></div><div class="vs" id="vsamt"></div></div></div>
@@ -348,10 +396,11 @@ function renderList(){
   const sorters={watch:(a,b)=>(wrank[a.a.cls]-wrank[b.a.cls])||(a.a.land-b.a.land),profAsc:(a,b)=>a.a.land-b.a.land,profDesc:(a,b)=>b.a.land-a.a.land,sDesc:(a,b)=>b.a.S-a.a.S,costR:(a,b)=>(b.a.costR||0)-(a.a.costR||0),name:(a,b)=>String(a.a.p.name).localeCompare(b.a.p.name)};
   idx.sort(sorters[sortKey]||sorters.watch);
   document.getElementById('aggTabs').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===aggView));
-  const isList=aggView==='list',isBun=aggView==='bunseki',isAgg=!isList&&!isBun;
+  const isList=aggView==='list',isBun=aggView==='bunseki',isMeet=aggView==='meeting',isAgg=!isList&&!isBun&&!isMeet;
   document.getElementById('listView').style.display=isList?'':'none';
   document.getElementById('aggView').style.display=isAgg?'':'none';
   document.getElementById('bunsekiView').style.display=isBun?'':'none';
+  document.getElementById('meetingView').style.display=isMeet?'':'none';
   document.getElementById('fbar').style.display=isList?'':'none';
   if(isList){
     const uri=revBase==='uriage';
@@ -365,6 +414,8 @@ function renderList(){
     document.getElementById('cnt-dn').textContent=dn.length+'件';
   }else if(isBun){
     renderBunseki(A);
+  }else if(isMeet){
+    renderMeeting(A);
   }else{
     const keyOf=x=>aggView==='tanto'?(x.a.p.tanto||'（担当なし）'):aggView==='dept'?(x.a.p.dept||'（部門なし）'):(x.a.p.client||'（得意先なし）');
     const g={};A.map((a,i)=>({a,i})).forEach(x=>{const k=keyOf(x);const o=g[k]=g[k]||{k,n:0,S:0,gp:0,bad:0};o.n++;o.S+=x.a.S;o.gp+=x.a.land;if(x.a.land<0)o.bad++;});
@@ -385,6 +436,55 @@ function renderList(){
 }
 /* ===== 分析ビュー（予実／粗利率バラつき／原価内訳） ===== */
 const ECOL=COL;
+function renderMeeting(A){
+  const on=withKin, kn=kinri();
+  const mon=a=>Math.round(a.tateka*kn/12);
+  const totTate=A.reduce((s,a)=>s+a.tateka,0);
+  const totMon=A.reduce((s,a)=>s+mon(a),0);
+  const nBad=A.filter(a=>a.cls==='bad').length;
+  let flg=A.filter(a=>a.cls!=='ok'||a.recBad||a.recWarn);
+  const sev=a=>a.cls==='bad'?0:a.cls==='warn'?1:2;
+  flg.sort((x,y)=> sev(x)-sev(y) || (y.tateka+Math.max(0,-y.land))-(x.tateka+Math.max(0,-x.land)) );
+  const good=A.filter(a=>a.cls==='ok'&&a.land>0&&a.tateka<=a.C*0.1&&flg.indexOf(a)<0).sort((x,y)=>y.land-x.land)[0];
+  const fyOf=a=>{const rr=a.p.asof||'';const y=+String(rr).slice(0,4),m=+String(rr).slice(5,7);return (y&&m)?((m>=7?y:y-1)+'年度'):'';};
+  function card(a,isGood){
+    const lg=a.landGross;
+    let sc,st;
+    if(a.cls==='bad'){sc='bad';st='赤字の見込み';}
+    else if(a.cls==='warn'){sc='warn';st=(on&&a.risoku>0&&a.tateka>0)?'利息で目減り中':(a.recWarn?'立替が大きい':'薄利・要注意');}
+    else {sc='ok';st=isGood?'優良・このまま':(a.recBad?'完成だが未収あり':'黒字');}
+    let bar;
+    if(a.land<0){
+      bar='<div class="track red"><div class="keep" style="width:100%"></div></div><div class="gaplab"><span class="lo">'+(lg<0?'仕入が請負を超過 ▲'+man(Math.abs(lg))+'円':'赤字 ▲'+man(Math.abs(a.land))+'円')+'</span>'+(on&&a.risoku>0?'<span style="color:var(--sub)">＋利息 ▲'+man(a.risoku)+'円</span>':'')+'</div>';
+    }else if(on&&a.risoku>0&&lg>0){ const lp=Math.min(60,Math.max(0,a.risoku/lg*100));
+      bar='<div class="track"><div class="keep" style="width:'+(100-lp)+'%"></div><div class="lost" style="width:'+lp+'%"></div></div><div class="gaplab"><span class="ke">手取り '+man(a.land)+'円</span><span class="lo">利息で ▲'+man(a.risoku)+'円</span></div>';
+    }else{
+      bar='<div class="track"><div class="keep" style="width:100%"></div></div><div class="gaplab"><span class="ke">粗利 '+man(a.land)+'円</span>'+(a.tateka>0?'<span style="color:var(--sub)">立替 '+man(a.tateka)+'円</span>':'')+'</div>';
+    }
+    let melt='';
+    if(on&&a.tateka>0&&a.risoku>0) melt='<div class="melt"><div class="ic">💸</div><div class="t">立替 <b>'+man(a.tateka)+'円</b> を自腹で回転中。このペースだと <span class="mo">月 '+yen(mon(a))+'円</span> 利息が消え、累計で約 <b>'+man(a.risoku)+'円</b>（経過'+a.years.toFixed(1)+'年）。</div></div>';
+    else if(a.tateka>0&&(a.recWarn||a.recBad)) melt='<div class="melt" style="background:var(--warnbg)"><div class="ic">⏳</div><div class="t">立替 <b style="color:var(--warn)">'+man(a.tateka)+'円</b> を自腹で回転中。早めの回収で資金が楽になります。</div></div>';
+    let mv;
+    if(a.mishu>1000){ if(on){const nt=Math.max(0,a.tateka-a.mishu/1.1),nm=Math.round(nt*kn/12);mv='<b>意識する一手：</b> 未回収 <b>'+man(a.mishu)+'円</b> を回収すれば、利息は <b>月 '+yen(mon(a))+'円 → '+yen(nm)+'円</b> に。';} else mv='<b>意識する一手：</b> 未回収 <b>'+man(a.mishu)+'円</b> を回収すれば、立替が減って資金が楽に。'; }
+    else if(a.cls==='bad'){ if(a.hasTgt){const rem=Math.max(0,a.S-a.GA-a.tgt-a.C);mv='<b>意識する一手：</b> 残りの原価を <b>'+man(rem)+'円以内</b> に抑えれば赤字幅が縮小。追加・変更分は必ず請求へ。';} else mv='<b>意識する一手：</b> 実行予算・目標が台帳未設定。まず実行予算を入れて予実管理を。'; }
+    else if(isGood) mv='<b>良い例：</b> 回収が早く立替が小さい。この回し方が理想。';
+    else mv='<b>意識する一手：</b> 立替を増やさないよう、こまめな請求・回収を。';
+    const kiki='工期 '+(a.start.getMonth()+1)+'/'+a.start.getDate()+'〜'+(a.fin.getMonth()+1)+'/'+a.fin.getDate()+(a.done?'（完成）':'（進捗'+pct(a.timeR,0)+'）');
+    return '<div class="mcard"><div class="mhead"><span class="tanto">担当 '+esc(a.p.tanto||'—')+'</span><span class="cname">'+esc(a.p.name)+'</span>'+(a.p.real?'':' <span class="samp">（サンプル）</span>')+'<span class="state '+sc+'">'+st+'</span></div><div class="cbody">'
+      +'<div class="gap"><div class="row"><span>本来の粗利（売上−仕入−社内経費'+pct(a.r,0)+'）'+(on&&a.risoku>0?'・利息込み':'')+'</span><b'+(a.land<0?' style="color:var(--bad)"':'')+'>'+(a.land<0?'▲':'')+man(Math.abs(a.land))+'円</b></div>'+bar+'</div>'
+      +melt
+      +'<div class="move"><div class="ic">'+(isGood?'◎':'▲')+'</div><div class="t">'+mv+'</div></div>'
+      +'<div class="mmeta">'+kiki+' ／ 得意先 '+esc(a.p.client||'—')+(fyOf(a)?' ／ '+fyOf(a):'')+'</div></div></div>';
+  }
+  let h='<div class="allbar"><div class="ttl">いま全社で</div>'
+    +'<div><span class="big bad">'+man(totTate)+'円</span><span class="k">を自腹で立替中（未回収ぶん）</span></div>'
+    +(on?'<div><span class="big bad">月 '+yen(totMon)+'円</span><span class="k">が利息で消えている（年利'+pct(kn,1)+'）</span></div>':'')
+    +'<div><span class="big">'+nBad+'</span><span class="k">件が赤字見込み</span></div></div>';
+  if(!flg.length) h+='<div class="mempty">手を打つべき工事はありません。全体は良好です。</div>';
+  else h+=flg.map(a=>card(a,false)).join('');
+  if(good) h+=card(good,true);
+  document.getElementById('meetingView').innerHTML=h;
+}
 function renderBunseki(A){
   const un0=A.filter(a=>!a.done), un=un0.filter(a=>a.Bok), noBudget=un0.filter(a=>!a.Bok).length;
   // ① 予実（実行予算 vs 原価・着地予測）※予算未設定の工事は対象外
@@ -555,6 +655,8 @@ function renderDetail(i){
 document.getElementById('list').addEventListener('click',e=>{const c=e.target.closest('[data-i]');if(c&&!e.target.closest('select,button.fclr'))openDetail(+c.dataset.i);});
 ['grpUn','grpDn'].forEach(id=>{const g=document.getElementById(id);if(!g)return;const body=g.querySelector('.gbody'),head=g.querySelector('.ghead');head.addEventListener('click',()=>{const open=g.classList.contains('collapsed');if(open){g.classList.remove('collapsed');body.style.height=body.scrollHeight+'px';body.addEventListener('transitionend',function h(){body.style.height='auto';body.removeEventListener('transitionend',h);},{once:true});}else{body.style.height=body.scrollHeight+'px';body.offsetHeight;g.classList.add('collapsed');body.style.height='0px';}});});
 (function(){const s=document.getElementById('fySel');if(s)s.addEventListener('change',e=>{selFY=+e.target.value;renderFYCover();});})();
+window.addEventListener('beforeprint',()=>{const h=document.getElementById('prHdr');if(!h)return;const inDetail=document.getElementById('detail').style.display==='block';h.textContent='工事台帳分析'+(inDetail?'（工事詳細）':(selFY?'　'+selFY+'年度':''))+'　印刷日 '+new Date().toLocaleDateString('ja-JP');});
+['printBtn','printBtn2'].forEach(id=>{const b=document.getElementById(id);if(b)b.addEventListener('click',()=>window.print());});
 document.getElementById('back').onclick=()=>{curDetail=null;document.getElementById('detail').style.display='none';document.getElementById('list').style.display='block';renderList();scrollTo(0,0);};
 document.getElementById('more').onclick=function(){const d=document.getElementById('dd');d.classList.toggle('open');this.textContent=d.classList.contains('open')?'− 詳細を閉じる':'＋ 詳細（計算の内訳・打ち手）を見る';};
 document.getElementById('rate').oninput=()=>{renderList();if(curDetail!=null)renderDetail(curDetail);};
