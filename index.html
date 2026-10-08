@@ -143,6 +143,17 @@ table.lst tbody tr:nth-child(n+5){animation-delay:.12s}
 table.lst tbody tr:active{transform:scale(.996)}
 .chip,button{transition:transform .09s ease}
 .chip:active,button:active{transform:scale(.97)}
+.fytag{display:inline-block;border:1px solid var(--line);border-radius:5px;padding:0 5px;margin-right:7px;color:var(--sub);font-size:10.5px;font-weight:700;vertical-align:1px}
+.dotcal{display:inline-block;width:13px;height:13px;border:1.5px solid var(--acc);border-radius:3px;position:relative;vertical-align:-2px;margin-right:4px}
+.dotcal::before{content:"";position:absolute;left:1.4px;right:1.4px;top:3px;height:1.5px;background:var(--acc)}
+#listView .grp{margin-bottom:18px}
+.seclbl.ghead{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
+.seclbl.ghead .ic{width:16px;height:16px;flex:none}
+.seclbl.ghead .ic.un{color:var(--warn)} .seclbl.ghead .ic.dn{color:var(--ok)}
+.seclbl.ghead .chev{width:14px;height:14px;flex:none;color:var(--sub);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+.grp.collapsed .chev{transform:rotate(-90deg)}
+.grp .gbody{transition:height .32s cubic-bezier(.2,.8,.2,1),opacity .26s ease;overflow:hidden}
+.grp.collapsed .gbody{height:0!important;opacity:0}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head><body><div class="wrap">
 <div id="list">
@@ -169,14 +180,18 @@ table.lst tbody tr:active{transform:scale(.996)}
   </div>
   <div id="watchBand" style="display:none"></div>
   <div id="listView">
-    <h2 class="seclbl">🏗️ 未成工事（進行中）<span id="cnt-un"></span></h2>
-    <div class="sheet"><table class="lst"><thead><tr>
+    <div class="grp" id="grpUn">
+    <h2 class="seclbl ghead"><svg class="chev" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="ic un" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>未成工事（進行中）<span id="cnt-un"></span></h2>
+    <div class="gbody"><div class="sheet"><table class="lst"><thead><tr>
       <th class="l">工事名</th><th class="l">担当者</th><th class="th-rev">請負金額</th><th>仕入<span style="font-weight:400">（原価＋社内経費）</span></th><th class="th-gp">粗利（着地見込み）</th><th></th>
-    </tr></thead><tbody id="tbUn"></tbody></table></div>
-    <h2 class="seclbl" style="margin-top:20px">✅ 完成工事<span id="cnt-dn"></span></h2>
-    <div class="sheet"><table class="lst"><thead><tr>
+    </tr></thead><tbody id="tbUn"></tbody></table></div></div>
+    </div>
+    <div class="grp" id="grpDn">
+    <h2 class="seclbl ghead"><svg class="chev" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="ic dn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.2l2.6 2.6L16 9.4"/></svg>完成工事<span id="cnt-dn"></span></h2>
+    <div class="gbody"><div class="sheet"><table class="lst"><thead><tr>
       <th class="l">工事名</th><th class="l">担当者</th><th class="th-rev">請負金額</th><th>仕入<span style="font-weight:400">（原価＋社内経費）</span></th><th class="th-gp th-gp-dn">粗利（確定）</th><th></th>
-    </tr></thead><tbody id="tbDn"></tbody></table></div>
+    </tr></thead><tbody id="tbDn"></tbody></table></div></div>
+    </div>
   </div>
   <div id="aggView" style="display:none"><h2 class="seclbl" id="aggTitle"></h2><div class="sheet"><table class="lst" id="aggTbl"></table></div></div>
   <div id="bunsekiView" style="display:none"></div>
@@ -279,18 +294,19 @@ function renderList(){
   const n={ok:0,warn:0,bad:0};A.forEach(a=>n[a.cls]++);
   const sGp=A.reduce((s,a)=>s+a.land,0);
   document.getElementById('cSum').innerHTML='全 <b>'+A.length+'</b> 工事　<span class="ok">🟢'+n.ok+'</span>　<span class="warn">🟡'+n.warn+'</span>　<span class="bad">🔴'+n.bad+'</span>　｜ 粗利 合計 <b>'+man(sGp)+'円</b>';
-  // いま入っている対象月（全工事の明細月＋基準月の和集合）
-  const mset=new Set();P.forEach(p=>{(p.months||[]).forEach(m=>{if(m.end)mset.add(String(m.end).slice(0,7));});if(!(p.months||[]).length&&p.asof)mset.add(String(p.asof).slice(0,7));});
-  const mArr=[...mset].filter(Boolean).sort();
+  // いま入っている対象年度（6月決算＝7月〜翌6月。始まりの年で「○年度」）
+  const fySY=ym=>{const y=+String(ym).slice(0,4),m=+String(ym).slice(5,7);return (y&&m)?(m>=7?y:y-1):null;};
+  const fyset=new Set();P.forEach(p=>{const ref=p.asof||((p.months&&p.months.length)?p.months[p.months.length-1].end:'');const sy=fySY(ref);if(sy!=null)fyset.add(sy);});
+  const fyArr=[...fyset].sort((a,b)=>a-b);
   const mChip=document.getElementById('mChip');
-  if(mArr.length){ const fmt=s=>{const[y,m]=s.split('-');return y+'年'+(+m)+'月';};
-    const label=mArr.length===1?fmt(mArr[0]):(mArr.length<=3?mArr.map(fmt).join('・'):(fmt(mArr[0])+'〜'+fmt(mArr[mArr.length-1])+'（'+mArr.length+'ヶ月）'));
-    mChip.innerHTML='📅 対象月：<b>'+label+'</b>';mChip.style.display=''; }
+  if(fyArr.length){ const label=fyArr.length===1?(fyArr[0]+'年度'):(fyArr[0]+'〜'+fyArr[fyArr.length-1]+'年度（'+fyArr.length+'年度分）');
+    mChip.innerHTML='<span class="dotcal"></span>対象年度：<b>'+label+'</b>';mChip.style.display=''; }
   else mChip.style.display='none';
   const rowHtml=(a,i)=>{
     const shiire=a.S-a.land;   // 仕入＝請負−粗利 なので 請負−仕入＝粗利 が成立
     const kiki='工期 '+(a.start.getMonth()+1)+'/'+a.start.getDate()+'〜'+(a.fin.getMonth()+1)+'/'+a.fin.getDate()+(a.done?'（完成）':'（進捗'+pct(a.timeR,0)+'）');
-    return '<tr data-i="'+i+'"><td class="l"><span class="dot '+a.cls+'"></span><span class="nm">'+esc(a.p.name)+'</span>'+(a.p.real?'':' <span class="samp">（サンプル）</span>')+'<div class="cli">'+esc(a.p.client)+' ／ '+esc(a.p.dept)+' ／ '+kiki+'</div></td>'
+    const _ref=a.p.asof||((a.p.months&&a.p.months.length)?a.p.months[a.p.months.length-1].end:'');const _y=+String(_ref).slice(0,4),_m=+String(_ref).slice(5,7);const fyt=(_y&&_m)?'<span class="fytag">'+(_m>=7?_y:_y-1)+'年度</span>':'';
+    return '<tr data-i="'+i+'"><td class="l"><span class="dot '+a.cls+'"></span><span class="nm">'+esc(a.p.name)+'</span>'+(a.p.real?'':' <span class="samp">（サンプル）</span>')+'<div class="cli">'+fyt+esc(a.p.client)+' ／ '+esc(a.p.dept)+' ／ '+kiki+'</div></td>'
      +'<td class="l">'+esc(a.p.tanto||'—')+'</td>'
      +'<td class="num">'+yen(a.S)+'</td>'
      +'<td class="num">'+yen(shiire)+'</td>'
@@ -413,7 +429,9 @@ function renderBunseki(A){
 }
 /* ===== 詳細 ===== */
 let curDetail=null;
-function openDetail(i){curDetail=i;document.getElementById('list').style.display='none';document.getElementById('detail').style.display='block';renderDetail(i);scrollTo(0,0);}
+const _reduceM=matchMedia('(prefers-reduced-motion:reduce)').matches;let _animBig=false;
+function countBig(el,to){const neg=to<0,abs=Math.abs(to),fmt=v=>(neg?'▲':'')+man(v)+'円';if(_reduceM){el.textContent=fmt(abs);return;}const dur=620,t0=performance.now();(function s(now){const p=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-p,3);el.textContent=fmt(abs*e);if(p<1)requestAnimationFrame(s);})(performance.now());}
+function openDetail(i){curDetail=i;_animBig=true;document.getElementById('list').style.display='none';document.getElementById('detail').style.display='block';renderDetail(i);scrollTo(0,0);}
 function renderDetail(i){
   const a=calc(P[i]),p=a.p,S=a.S,GA=a.GA,C=a.C,tgt=a.tgt,land=a.land,diff=a.diff;
   const revLbl=a.useUri?'累計売上':'請負';
@@ -424,7 +442,7 @@ function renderDetail(i){
   document.getElementById('sig').innerHTML=sig;document.getElementById('st').textContent=stt;
   document.getElementById('hsub').innerHTML=a.hasTgt?('目標 '+man(tgt)+'円（'+pct(a.tgtRate)+'）に対して'):'目標（実行予算）は台帳未設定 ― 原価ペースでの着地見込み';
   document.getElementById('bigamtLab').textContent=(a.useUri?'本来の粗利（実績・累計売上ベース）':'本来の粗利（着地見込み）')+(withKin?'・利息込み':'');
-  document.getElementById('bigamt').textContent=(land<0?'▲':'')+man(Math.abs(land))+'円';
+  if(_animBig){countBig(document.getElementById('bigamt'),land);_animBig=false;}else document.getElementById('bigamt').textContent=(land<0?'▲':'')+man(Math.abs(land))+'円';
   document.getElementById('vsamt').innerHTML=!a.hasTgt?'':(diff>=0?'<span class="up">目標 +'+man(diff)+'円</span>':'<span class="down">目標 ▲'+man(-diff)+'円</span>');
   const cmp=(v,c)=>'<div class="cmp '+c+'">'+v+'</div>';
   const t1=!a.hasTgt?['','—']:diff>=0?['up','達成見込み']:diff<-tgt*0.3?['down','未達の恐れ']:['mid2','ギリギリ'];
@@ -507,6 +525,7 @@ function renderDetail(i){
   document.getElementById('mtbl').onclick=ev=>{const tr=ev.target.closest('tr[data-m]');if(!tr)return;drawFactors(tr.dataset.m);document.getElementById('fscope').scrollIntoView({block:'center',behavior:'smooth'});};
 }
 document.getElementById('list').addEventListener('click',e=>{const c=e.target.closest('[data-i]');if(c&&!e.target.closest('select,button.fclr'))openDetail(+c.dataset.i);});
+['grpUn','grpDn'].forEach(id=>{const g=document.getElementById(id);if(!g)return;const body=g.querySelector('.gbody'),head=g.querySelector('.ghead');head.addEventListener('click',()=>{const open=g.classList.contains('collapsed');if(open){g.classList.remove('collapsed');body.style.height=body.scrollHeight+'px';body.addEventListener('transitionend',function h(){body.style.height='auto';body.removeEventListener('transitionend',h);},{once:true});}else{body.style.height=body.scrollHeight+'px';body.offsetHeight;g.classList.add('collapsed');body.style.height='0px';}});});
 document.getElementById('back').onclick=()=>{curDetail=null;document.getElementById('detail').style.display='none';document.getElementById('list').style.display='block';renderList();scrollTo(0,0);};
 document.getElementById('more').onclick=function(){const d=document.getElementById('dd');d.classList.toggle('open');this.textContent=d.classList.contains('open')?'− 詳細を閉じる':'＋ 詳細（計算の内訳・打ち手）を見る';};
 document.getElementById('rate').oninput=()=>{renderList();if(curDetail!=null)renderDetail(curDetail);};
