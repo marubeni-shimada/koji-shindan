@@ -6,14 +6,14 @@
  --c-out:#3a6ff0;--c-rou:#f0994a;--c-mat:#f5c542;--c-lea:#4fb6e6;--c-exp:#9aa6bd;--c-rem:#d4dcea;--ga:#7c5cff}
 @media(prefers-color-scheme:dark){:root{--bg:#0c1222;--card:#141c30;--ink:#eaf0ff;--sub:#93a1bf;--line:#273150;--okbg:#113626;--warnbg:#3c2e12;--badbg:#3c1c1c;--c-rem:#2a3550}}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--ink);font:14px/1.6 "Yu Gothic UI","Hiragino Sans","Meiryo",sans-serif}
+body{background:var(--bg);color:var(--ink);font:13px/1.55 "Yu Gothic UI","Hiragino Sans","Meiryo",sans-serif}
 .wrap{max-width:1000px;margin:0 auto;padding:20px 16px 56px}
-h1{font-size:20px;font-weight:900}.lead{color:var(--sub);font-size:12px;margin:3px 0 14px}
+h1{font-size:17px;font-weight:900}.lead{color:var(--sub);font-size:12px;margin:3px 0 14px}
 .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
 select,input[type=number]{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:8px 11px;font:inherit}
-.chip{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 13px;font-size:12.5px;font-weight:700}
-.chip b{font-size:15px}.chip .ok{color:var(--ok)}.chip .warn{color:var(--warn)}.chip .bad{color:var(--bad)}
-.seclbl{font-size:14px;font-weight:800;margin:4px 0 8px}.seclbl span{color:var(--sub);font-weight:700;font-size:12px;margin-left:6px}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 11px;font-size:12px;font-weight:700}
+.chip b{font-size:13px}.chip .ok{color:var(--ok)}.chip .warn{color:var(--warn)}.chip .bad{color:var(--bad)}
+.seclbl{font-size:13px;font-weight:800;margin:4px 0 8px}.seclbl span{color:var(--sub);font-weight:700;font-size:12px;margin-left:6px}
 .mtab{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 12px}
 .mtab button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:9px;padding:6px 15px;font:inherit;font-weight:700;font-size:12.5px;cursor:pointer}
 .mtab button.on{background:var(--acc);border-color:var(--acc);color:#fff}
@@ -50,8 +50,8 @@ select,input[type=number]{background:var(--card);color:var(--ink);border:1px sol
 /* 一覧テーブル */
 .sheet{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow-x:auto;overflow-y:hidden}
 table.lst{width:100%;border-collapse:collapse}
-table.lst th,table.lst td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:14px;text-align:right;white-space:nowrap}
-table.lst th{background:var(--bg);color:var(--sub);font-size:12px;font-weight:800;text-align:right}
+table.lst th,table.lst td{padding:10px 12px;border-bottom:1px solid var(--line);font-size:12.5px;text-align:right;white-space:nowrap}
+table.lst th{background:var(--bg);color:var(--sub);font-size:11px;font-weight:800;text-align:right}
 table.lst th.l,table.lst td.l{text-align:left}
 table.lst td.l:first-child{white-space:normal;max-width:360px}
 table.lst td.l:first-child .cli{white-space:normal}
@@ -74,14 +74,19 @@ table.lst.mini th,table.lst.mini td{padding:7px 10px;font-size:12.5px}
 .meta{color:var(--sub);font-size:12px;margin-bottom:10px}
 .hero{border-radius:18px;padding:22px 24px;margin-bottom:14px;border:1px solid var(--line);display:flex;align-items:center;gap:22px;flex-wrap:wrap}
 .hero.ok{background:linear-gradient(135deg,var(--okbg),var(--card))}.hero.warn{background:linear-gradient(135deg,var(--warnbg),var(--card))}.hero.bad{background:linear-gradient(135deg,var(--badbg),var(--card))}
-.hero .sig{font-size:46px;line-height:1}.hero .mid{flex:1;min-width:200px}
-.hero .st{font-size:17px;font-weight:900;margin-bottom:2px}.hero.ok .st{color:var(--ok)}.hero.warn .st{color:var(--warn)}.hero.bad .st{color:var(--bad)}
+.hero .sig{width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;flex:none}
+.hero .sig svg{width:28px;height:28px}
+.hero.ok .sig{background:var(--okbg);color:var(--ok)}
+.hero.warn .sig{background:var(--warnbg);color:var(--warn)}
+.hero.bad .sig{background:var(--badbg);color:var(--bad)}
+.hero .mid{flex:1;min-width:200px}
+.hero .st{font-size:15px;font-weight:900;margin-bottom:2px}.hero.ok .st{color:var(--ok)}.hero.warn .st{color:var(--warn)}.hero.bad .st{color:var(--bad)}
 .hero .subt{color:var(--sub);font-size:12.5px}.hero .amt{text-align:right}
-.hero .amt .big{font-size:38px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1}.hero.ok .amt .big{color:var(--ok)}.hero.bad .amt .big{color:var(--bad)}
+.hero .amt .big{font-size:28px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1}.hero.ok .amt .big{color:var(--ok)}.hero.bad .amt .big{color:var(--bad)}
 .hero .amt .l{font-size:11px;color:var(--sub);font-weight:700}.hero .amt .vs{font-size:12.5px;font-weight:800;margin-top:3px}
 .nums{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:14px}@media(max-width:720px){.nums{grid-template-columns:repeat(2,1fr)}}
 .n{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;text-align:center}
-.n .lab{font-size:11px;color:var(--sub);font-weight:700}.n .v{font-size:26px;font-weight:900;margin:3px 0;font-variant-numeric:tabular-nums}.n .cmp{font-size:11px;font-weight:800}
+.n .lab{font-size:11px;color:var(--sub);font-weight:700}.n .v{font-size:21px;font-weight:900;margin:3px 0;font-variant-numeric:tabular-nums}.n .cmp{font-size:11px;font-weight:800}
 .more{width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;font:inherit;font-weight:800;color:var(--acc);cursor:pointer;margin-bottom:14px}
 .dd{display:none}.dd.open{display:block}
 .sec{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 18px;margin-bottom:14px}
@@ -102,7 +107,11 @@ table.lst.mini th,table.lst.mini td{padding:7px 10px;font-size:12.5px}
 .factor .track{flex:1;background:var(--bg);border-radius:7px;height:20px;overflow:hidden}
 .factor .fill{height:100%;border-radius:7px;display:flex;align-items:center;padding-left:7px;color:#fff;font-size:10.5px;font-weight:800;white-space:nowrap}
 .factor .rt{width:120px;text-align:right;font-size:11px;color:var(--sub)}
-.flow{display:flex;height:38px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.flow{display:flex;gap:2px;height:44px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--line)}
+.b2{display:flex;align-items:center;justify-content:center;color:#fff;font-size:12.5px;font-weight:800;white-space:nowrap;overflow:hidden;min-width:2px;transform-origin:left;animation:growX .6s cubic-bezier(.2,.8,.2,1) both}
+.b2.cost{background:#6d7686}.b2.prof{background:var(--ok)}.b2.loss{background:var(--bad)}
+.flowLab{font-size:12.5px;color:var(--sub);font-weight:700;margin:14px 0 7px;line-height:1.8}
+.flowLab b{color:var(--ink);font-weight:800}
 .flow .seg{display:flex;align-items:center;padding:0 7px;color:#fff;font-size:10px;font-weight:800;white-space:nowrap;overflow:hidden;min-width:2px}.flow .seg.light{color:var(--ink)}
 .axis{display:flex;justify-content:space-between;color:var(--sub);font-size:11px;margin-top:4px}
 .act{background:linear-gradient(135deg,#eaf1ff,var(--card));border-left:4px solid var(--acc);border-radius:10px;padding:11px 14px;font-size:13px;line-height:1.8}
@@ -183,7 +192,7 @@ table.lst tbody tr:active{transform:scale(.996)}
   <div class="sec" id="risokuSec" style="display:none"><h2>🏦 利息（借入金利）の計算根拠</h2><div id="risokuBody"></div></div>
   <div class="sec"><h2>📅 月ごと・累計の原価　<span style="font-weight:400;color:var(--sub);font-size:11px">行をクリックでその月の内訳へ</span></h2><div style="overflow-x:auto"><table class="lst mini" id="mtbl"></table></div></div>
   <div class="sec"><h2>💸 費目の内訳</h2><div class="mtab" id="dmonth"></div><div class="hint" id="fscope" style="font-size:11.5px;color:var(--sub);margin-bottom:10px"></div><div id="factors"></div>
-    <div style="font-size:11px;color:var(--sub);font-weight:800;margin:12px 0 4px">お金の行き先（請負ぜんぶ・累計）</div>
+    <div class="flowLab" id="flowLab">請負の使われ方</div>
     <div class="flow" id="flow"></div><div class="axis"><span>0円</span><span id="axR"></span></div></div>
   <button class="more" id="more">＋ 詳細（計算の内訳・打ち手）を見る</button>
   <div class="dd" id="dd">
@@ -408,10 +417,11 @@ function openDetail(i){curDetail=i;document.getElementById('list').style.display
 function renderDetail(i){
   const a=calc(P[i]),p=a.p,S=a.S,GA=a.GA,C=a.C,tgt=a.tgt,land=a.land,diff=a.diff;
   const revLbl=a.useUri?'累計売上':'請負';
-  const sig={ok:'🟢',warn:'🟡',bad:'🔴'}[a.cls],stt={ok:'目標どおり 黒字で着地',warn:'目標割れの注意',bad:'赤字の恐れ'}[a.cls];
+  const SIGSVG={ok:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.5h.01"/></svg>',bad:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 4L2 18.6A2 2 0 003.7 21.6h16.6A2 2 0 0022 18.6L13.7 4a2 2 0 00-3.4 0z"/><path d="M12 9.5v4"/><path d="M12 17.5h.01"/></svg>'};
+  const sig=SIGSVG[a.cls],stt={ok:'目標どおり 黒字で着地',warn:'目標割れの注意',bad:'赤字の恐れ'}[a.cls];
   document.getElementById('meta').innerHTML='['+sector(p)+'] <b style="color:var(--ink)">'+esc(p.name)+'</b>'+(p.real?'':' <span class="samp">（サンプル）</span>')+' ／ '+esc(p.client)+' ／ 担当 '+esc(p.tanto||'—')+' ／ 工期 '+(a.start.getMonth()+1)+'/'+a.start.getDate()+'〜'+(a.fin.getMonth()+1)+'/'+a.fin.getDate()+' ／ 基準 '+(a.asof.getMonth()+1)+'/'+a.asof.getDate();
   document.getElementById('hero').className='hero '+a.cls;
-  document.getElementById('sig').textContent=sig;document.getElementById('st').textContent=stt;
+  document.getElementById('sig').innerHTML=sig;document.getElementById('st').textContent=stt;
   document.getElementById('hsub').innerHTML=a.hasTgt?('目標 '+man(tgt)+'円（'+pct(a.tgtRate)+'）に対して'):'目標（実行予算）は台帳未設定 ― 原価ペースでの着地見込み';
   document.getElementById('bigamtLab').textContent=(a.useUri?'本来の粗利（実績・累計売上ベース）':'本来の粗利（着地見込み）')+(withKin?'・利息込み':'');
   document.getElementById('bigamt').textContent=(land<0?'▲':'')+man(Math.abs(land))+'円';
@@ -451,11 +461,15 @@ function renderDetail(i){
       +(tp[1]>0?'<div class="foot">最大の支払先 <b>'+esc(tp[0])+'</b>（'+pct(tp[1]/cc,0)+'）</div>':'');
   }
   sel.onclick=ev=>{const b=ev.target.closest('button[data-m]');if(b)drawFactors(b.dataset.m);};drawFactors('all');
-  const rem=Math.max(0,a.B-C);let fh='';ELS.forEach(k=>{const v=el[k]||0;if(v>0)fh+='<div class="seg'+(k==='材料費'?' light':'')+'" style="width:'+(v/S*100)+'%;background:'+COL[k]+'" title="'+k+' '+yen(v)+'">'+(v/S>.09?k:'')+'</div>';});
-  fh+='<div class="seg light" style="width:'+(rem/S*100)+'%;background:var(--c-rem)" title="残予算 '+yen(rem)+'">'+(rem/S>.09?'残予算':'')+'</div>';
-  fh+='<div class="seg" style="width:'+(GA/S*100)+'%;background:var(--ga)" title="社内経費 '+yen(GA)+'">'+(GA/S>.07?'社内経費':'')+'</div>';
-  fh+='<div class="seg" style="width:'+(Math.max(0,tgt)/S*100)+'%;background:var(--ok)" title="粗利 '+yen(tgt)+'">'+(tgt/S>.05?'粗利':'')+'</div>';
-  document.getElementById('flow').innerHTML=fh;document.getElementById('axR').textContent=revLbl+' '+yen(S)+'円';
+  // 請負の使われ方＝「仕入」と「本来の粗利」の2ブロックで一目で（内訳は上の費目セクションが担当）
+  const prof=land, cost=S-prof, profPos=prof>=0; let fh='';
+  if(profPos && S>0){ const wc=cost/S*100, wp=prof/S*100;
+    fh='<div class="b2 cost" style="width:'+wc+'%">'+(wc>=20?'仕入 '+man(cost)+'円':'')+'</div>'
+      +'<div class="b2 prof" style="width:'+wp+'%">'+(wp>=16?'本来の粗利 '+man(prof)+'円':'')+'</div>';
+  }else{ fh='<div class="b2 loss" style="width:100%">仕入が請負を超過　▲'+man(Math.abs(prof))+'円</div>'; }
+  document.getElementById('flow').innerHTML=fh;
+  const flx=document.getElementById('flowLab'); if(flx) flx.innerHTML='請負 <b>'+man(S)+'円</b> ＝ 仕入 <b>'+man(cost)+'円</b> ＋ 本来の粗利 <b style="color:'+(profPos?'var(--ok)':'var(--bad)')+'">'+(profPos?'':'▲')+man(Math.abs(prof))+'円</b>';
+  document.getElementById('axR').textContent=revLbl+' '+yen(S)+'円';
   let act = a.hasTgt ? ('残りの原価を <b>'+yen(Math.max(0,S-GA-tgt-C))+'円以内</b>に抑えれば目標達成。') : '台帳に実行予算・目標が未設定の工事です。まず実行予算を入れると予実管理ができます。';
   if((el['外注費']||0)/C2>0.6)act+=' 外注が原価の'+pct((el['外注費']||0)/C2,0)+'（'+esc(top[0])+'集中）＝<b>出来高査定と請求の月次突合</b>が最優先。';
   if(a.costR!=null){ if(a.costR>a.timeR)act+=' 原価が工期より先行＝<b>最終原価の見込みを今月再作成</b>。';else act+=' ペースは予算内。<b>追加・変更工事の請求漏れ</b>に注意。'; }
