@@ -250,7 +250,7 @@ table.lst tbody tr:active{transform:scale(.996)}
     <button id="printBtn" class="prbtn" title="この一覧を印刷／PDFで保存"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg>印刷 / PDF</button>
     <span class="chip yearchip" id="mChip" style="display:none"><span class="dotcal"></span><span class="lb">対象年度</span><select id="fySel"></select></span>
     <span class="chip" id="gasState" style="display:none"></span>
-    <span class="revtog" id="revTog" title="売上の基準を切替（社内経費13%は常に請負金額×13%）"><button data-rb="contract" class="on">請負ベース</button><button data-rb="uriage">累計売上ベース</button></span>
+    <span class="revtog" id="revTog" title="売上の基準を切替（社内経費13%は常に請負金額×13%）"><button data-rb="uriage" class="on">累計売上ベース</button><button data-rb="contract">請負ベース</button></span>
     <span class="revtog" id="kinTog" title="利息（借入金利）を粗利に含めるか切替"><button data-ki="0" class="on">利息なし</button><button data-ki="1">利息込み</button></span>
     <label style="color:var(--sub);font-size:12px">社内経費率</label><input type="number" id="rate" value="13" step="0.5" min="0" max="50" style="width:60px"> %
     <label style="color:var(--sub);font-size:12px" id="kinriLab" title="立替金（原価−回収）に年利を掛け、経過年数ぶんの利息を粗利から別途引きます">利息 年利</label><input type="number" id="kinri" value="2" step="0.1" min="0" max="20" style="width:58px"> %
@@ -347,7 +347,7 @@ const COL={'外注費':'var(--c-out)','労務費':'var(--c-rou)','材料費':'va
 const ELS=['外注費','労務費','材料費','リース費','経費'];
 function rate(){return (+document.getElementById('rate').value||0)/100;}
 function kinri(){const el=document.getElementById('kinri');return el?(+el.value||0)/100:0;}   // 借入年利
-let aggView='list',fSector='',fDept='',fTanto='',fState='',sortKey='watch',revBase='contract',fQ='',withKin=false;
+let aggView='list',fSector='',fDept='',fTanto='',fState='',sortKey='watch',revBase='uriage',fQ='',withKin=false;
 function isDone(p){ if(p.kansei)return true; try{return D(p.asof)>=D(p.fin);}catch(e){return false;} }
 function calc(p){
   const r=rate(),contract=p.S,C=p.C;
@@ -592,7 +592,7 @@ function renderFYCover(){
 }
 const _reduceM=matchMedia('(prefers-reduced-motion:reduce)').matches;let _animBig=false;
 function countBig(el,to){const neg=to<0,abs=Math.abs(to),fmt=v=>(neg?'▲':'')+man(v)+'円';if(_reduceM){el.textContent=fmt(abs);return;}const dur=620,t0=performance.now();(function s(now){const p=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-p,3);el.textContent=fmt(abs*e);if(p<1)requestAnimationFrame(s);})(performance.now());}
-function openDetail(i){curDetail=i;_animBig=true;document.getElementById('list').style.display='none';document.getElementById('detail').style.display='block';renderDetail(i);scrollTo(0,0);}
+function openDetail(i){curDetail=i;_animBig=true;document.getElementById('list').style.display='none';{const dr=document.getElementById('drop');if(dr)dr.style.display='none';}document.getElementById('detail').style.display='block';renderDetail(i);scrollTo(0,0);}
 function renderDetail(i){
   const a=calc(P[i]),p=a.p,S=a.S,GA=a.GA,C=a.C,tgt=a.tgt,land=a.land,diff=a.diff;
   const revLbl=a.useUri?'累計売上':'請負';
@@ -690,7 +690,7 @@ document.getElementById('list').addEventListener('click',e=>{const c=e.target.cl
 (function(){const s=document.getElementById('fySel');if(s)s.addEventListener('change',e=>{selFY=+e.target.value;renderFYCover();});})();
 window.addEventListener('beforeprint',()=>{const h=document.getElementById('prHdr');if(!h)return;const inDetail=document.getElementById('detail').style.display==='block';h.textContent='工事台帳分析'+(inDetail?'（工事詳細）':(selFY?'　'+selFY+'年度':''))+'　印刷日 '+new Date().toLocaleDateString('ja-JP');});
 ['printBtn','printBtn2','printBtn3'].forEach(id=>{const b=document.getElementById(id);if(b)b.addEventListener('click',()=>window.print());});
-document.getElementById('back').onclick=()=>{curDetail=null;document.getElementById('detail').style.display='none';document.getElementById('list').style.display='block';renderList();scrollTo(0,0);};
+document.getElementById('back').onclick=()=>{curDetail=null;document.getElementById('detail').style.display='none';{const dr=document.getElementById('drop');if(dr)dr.style.display='';}document.getElementById('list').style.display='block';renderList();scrollTo(0,0);};
 document.getElementById('more').onclick=function(){const d=document.getElementById('dd');d.classList.toggle('open');this.textContent=d.classList.contains('open')?'− 詳細を閉じる':'＋ 詳細（計算の内訳・打ち手）を見る';};
 document.getElementById('rate').oninput=()=>{renderList();if(curDetail!=null)renderDetail(curDetail);};
 document.getElementById('kinri').oninput=()=>{renderList();if(curDetail!=null)renderDetail(curDetail);};
@@ -703,7 +703,7 @@ function osGo(k){
   document.getElementById('os-show').classList.toggle('on',k==='show');
   document.getElementById('os-share').classList.toggle('on',k==='share');
   if(k==='share'){ try{ renderMeeting(P.map(calc)); const m=document.getElementById('meetingView'); if(m)m.style.display=''; }catch(e){} }
-  if(k==='show'){ const d=document.getElementById('detail'); if(d)d.style.display='none'; const l=document.getElementById('list'); if(l)l.style.display='block'; }
+  if(k==='show'){ const d=document.getElementById('detail'); if(d)d.style.display='none'; const dr=document.getElementById('drop'); if(dr)dr.style.display=''; const l=document.getElementById('list'); if(l)l.style.display='block'; }
   try{scrollTo(0,0);}catch(e){}
 }
 document.getElementById('osteps').onclick=e=>{const b=e.target.closest('button[data-os]');if(b)osGo(b.dataset.os);};
