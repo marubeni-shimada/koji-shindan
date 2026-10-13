@@ -236,7 +236,7 @@ table.lst tbody tr:active{transform:scale(.996)}
 .sharenote{font-size:12px;color:var(--sub)}
 @media print{.osteps{display:none}}
 </style></head><body><div class="wrap">
-<div id="loadOv"><div class="lo-box"><div class="lo-spin"></div><div>取り込み中…</div></div></div>
+<div id="loadOv"><div class="lo-box"><div class="lo-spin"></div><div id="loadTxt">取り込み中…</div></div></div>
 <div class="printonly" id="prHdr"></div>
 <h1 style="margin-bottom:10px">工事台帳分析</h1>
 <div class="osteps" id="osteps">
@@ -707,7 +707,7 @@ function osGo(k){
   try{scrollTo(0,0);}catch(e){}
 }
 document.getElementById('osteps').onclick=e=>{const b=e.target.closest('button[data-os]');if(b)osGo(b.dataset.os);};
-function showLoad(){const o=document.getElementById('loadOv');if(o)o.classList.add('on');}
+function showLoad(txt){const o=document.getElementById('loadOv');if(o){const t=document.getElementById('loadTxt');if(t)t.textContent=txt||'取り込み中…';o.classList.add('on');}}
 function hideLoad(){const o=document.getElementById('loadOv');if(o)o.classList.remove('on');}
 document.getElementById('revTog').onclick=e=>{const b=e.target.closest('button[data-rb]');if(!b)return;revBase=b.dataset.rb;document.querySelectorAll('#revTog button').forEach(x=>x.classList.toggle('on',x.dataset.rb===revBase));if(curDetail!=null)renderDetail(curDetail);renderList();};
 document.getElementById('fSector').onchange=e=>{fSector=e.target.value;renderList();};
@@ -826,8 +826,9 @@ function pushGas(){ if(!GAS_URL)return; gasPill('☁ 保存中…','var(--sub)')
   fetch(GAS_URL,{method:'POST',body:JSON.stringify({projects:P}),headers:{'Content-Type':'text/plain;charset=utf-8'}})
     .then(()=>gasPill('☁ クラウド保存済','var(--ok)')).catch(()=>gasPill('⚠ 保存エラー','var(--bad)')); }
 function pullGas(){ if(!GAS_URL)return; gasPill('☁ 読込中…','var(--sub)');
-  fetch(GAS_URL).then(r=>r.json()).then(o=>{ if(o&&o.projects&&o.projects.length){ P=o.projects; aggView='list'; renderList(); osGo('show'); gasPill('☁ クラウドの最新を表示','var(--ok)'); } else gasPill('☁ クラウド接続中（データなし）',''); })
-    .catch(()=>gasPill('⚠ 読込エラー','var(--bad)')); }
-renderList();
-if(GAS_URL)pullGas();
+  fetch(GAS_URL).then(r=>r.json()).then(o=>{ if(o&&o.projects&&o.projects.length){ P=o.projects; aggView='list'; renderList(); osGo('show'); gasPill('☁ クラウドの最新を表示','var(--ok)'); } else { renderList(); gasPill('☁ クラウド接続中（データなし）',''); } })
+    .catch(()=>{ renderList(); gasPill('⚠ 読込エラー','var(--bad)'); })
+    .finally(hideLoad); }
+/* 起動：GASがある時はクラウド読込までローディング表示（サンプルを一瞬出さない）。無い/失敗時のみ埋め込みを描画 */
+if(GAS_URL){ showLoad('クラウドから読み込み中…'); pullGas(); } else { renderList(); }
 </script></body></html>
