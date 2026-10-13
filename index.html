@@ -250,7 +250,7 @@ table.lst tbody tr:active{transform:scale(.996)}
     <button id="printBtn" class="prbtn" title="この一覧を印刷／PDFで保存"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg>印刷 / PDF</button>
     <span class="chip yearchip" id="mChip" style="display:none"><span class="dotcal"></span><span class="lb">対象年度</span><select id="fySel"></select></span>
     <span class="chip" id="gasState" style="display:none"></span>
-    <span class="revtog" id="revTog" title="売上の基準を切替（社内経費13%は常に請負金額×13%）"><button data-rb="uriage" class="on">累計売上ベース</button><button data-rb="contract">請負ベース</button></span>
+    <span class="revtog" id="revTog" title="売上の基準を切替（社内経費13%も選択中の売上基準×13%）"><button data-rb="uriage" class="on">累計売上ベース</button><button data-rb="contract">請負ベース</button></span>
     <span class="revtog" id="kinTog" title="利息（借入金利）を粗利に含めるか切替"><button data-ki="0" class="on">利息なし</button><button data-ki="1">利息込み</button></span>
     <label style="color:var(--sub);font-size:12px">社内経費率</label><input type="number" id="rate" value="13" step="0.5" min="0" max="50" style="width:60px"> %
     <label style="color:var(--sub);font-size:12px" id="kinriLab" title="立替金（原価−回収）に年利を掛け、経過年数ぶんの利息を粗利から別途引きます">利息 年利</label><input type="number" id="kinri" value="2" step="0.1" min="0" max="20" style="width:58px"> %
@@ -351,10 +351,10 @@ let aggView='list',fSector='',fDept='',fTanto='',fState='',sortKey='watch',revBa
 function isDone(p){ if(p.kansei)return true; try{return D(p.asof)>=D(p.fin);}catch(e){return false;} }
 function calc(p){
   const r=rate(),contract=p.S,C=p.C;
-  // 売上の基準：累計売上ベース（実績到達）/ 請負ベース（当初契約）。社内経費は常に請負金額×13%
+  // 売上の基準：累計売上ベース（実績到達）/ 請負ベース（当初契約）。社内経費は選択中の売上基準×13%（累計売上ベースなら累計売上×13%）
   const useUri=(revBase==='uriage' && p.Suri>0);
   const S=useUri?p.Suri:contract;
-  const GA=Math.round(contract*r);
+  const GA=Math.round(S*r);
   const start=D(p.start),fin=D(p.fin),asof=D(p.asof),done=isDone(p);
   const timeR=done?1:Math.min(1,Math.max(.03,(asof-start)/(fin-start)));
   const B=p.B,Bok=B>0 && B<contract*3;   // 実行予算が妥当に入っているか（台帳で未設定=0 の工事がある）
@@ -465,7 +465,7 @@ function renderList(){
   document.getElementById('lfoot').innerHTML=(revBase==='uriage'
     ?'※ <b>累計売上ベース</b>：粗利＝累計売上−仕入（仕入＝累計原価＋社内経費）＝実現済みの粗利。変更増額も反映。'
     :'※ <b>請負ベース</b>：粗利＝請負金額−仕入（仕入＝原価＋社内経費）。着地見込み＝「予算どおり」と「原価ペース」の中間。')
-    +'目標＝台帳の目標純利益。社内経費＝常に請負×'+pct(rate(),1)+'。'+(withKin?'<b>利息込み</b>＝立替（原価−回収）×年利'+pct(kinri(),1)+'×経過年数を別途控除（概算・最大5年）。':'利息なし（上の「利息込み」で切替）。')+'担当者＝台帳の現場代理人。<span class="samp">（サンプル）</span>は見本データ。';
+    +'目標＝台帳の目標純利益。社内経費＝'+(revBase==='uriage'?'累計売上':'請負')+'×'+pct(rate(),1)+'。'+(withKin?'<b>利息込み</b>＝立替（原価−回収）×年利'+pct(kinri(),1)+'×経過年数を別途控除（概算・最大5年）。':'利息なし（上の「利息込み」で切替）。')+'担当者＝台帳の現場代理人。<span class="samp">（サンプル）</span>は見本データ。';
 }
 /* ===== 分析ビュー（予実／粗利率バラつき／原価内訳） ===== */
 const ECOL=COL;
@@ -613,13 +613,13 @@ function renderDetail(i){
     '<div class="n"><div class="lab">着地の粗利率</div><div class="v '+(a.landRate<0?'down':'')+'">'+pct(a.landRate)+'</div>'+cmp(t2[1],t2[0])+'</div>'
    +'<div class="n"><div class="lab">目標との差</div><div class="v '+t1[0]+'">'+(a.hasTgt?((diff>=0?'+':'▲')+man(Math.abs(diff))):'—')+'</div>'+cmp(t1[1],t1[0])+'</div>'
    +'<div class="n"><div class="lab">原価消化 / 工期</div><div class="v">'+(a.costR==null?'—':pct(a.costR,0))+'<span style="font-size:15px;color:var(--sub)"> / '+pct(a.timeR,0)+'</span></div>'+cmp(t3[1],t3[0])+'</div>'
-   +'<div class="n"><div class="lab">社内経費（×'+pct(a.r,a.r*100%1?1:0)+'）</div><div class="v" style="color:var(--ga)">'+man(GA)+'</div>'+cmp('請負×'+pct(a.r,a.r*100%1?1:0),'')+'</div>';
+   +'<div class="n"><div class="lab">社内経費（×'+pct(a.r,a.r*100%1?1:0)+'）</div><div class="v" style="color:var(--ga)">'+man(GA)+'</div>'+cmp((a.useUri?'累計売上':'請負')+'×'+pct(a.r,a.r*100%1?1:0),'')+'</div>';
   const tot=C+GA;
   const nowNet=(S-tot)-(a.kinOn?a.risoku:0);   // 現時点の本来の粗利（利息込みモードのみ利息控除）
-  let keH='<div class="ke"><span class="lbl">社内経費</span><span class="num">'+yen(a.contract)+'</span><span class="lbl">請負</span><span class="op">×</span><span class="num">'+pct(a.r,a.r*100%1?1:0)+'</span><span class="op">＝</span><span class="res ga">'+yen(GA)+'円</span></div>'
-   +'<div class="ke"><span class="lbl">合計仕入</span><span class="num">'+yen(C)+'</span><span class="lbl">原価</span><span class="op">＋</span><span class="num ga">'+yen(GA)+'</span><span class="lbl">社内経費</span><span class="op">＝</span><span class="res">'+yen(tot)+'円</span></div>';
-  if(a.kinOn){ keH+='<div class="ke"><span class="lbl">利息</span><span class="num">'+yen(a.tateka)+'</span><span class="lbl">立替</span><span class="op">×</span><span class="num">年利'+pct(kinri(),1)+'</span><span class="op">×</span><span class="num">'+a.years.toFixed(1)+'年</span><span class="op">＝</span><span class="res" style="color:var(--bad)">'+yen(a.risoku)+'円</span></div>'; }
-  keH+='<div class="ke hl"><span class="lbl">本来の粗利</span><span class="num">'+yen(S)+'</span><span class="lbl">'+revLbl+'</span><span class="op">−</span><span class="num">'+yen(tot)+'</span><span class="lbl">仕入</span>'+(a.kinOn?('<span class="op">−</span><span class="num">'+yen(a.risoku)+'</span><span class="lbl">利息</span>'):'')+'<span class="op">＝</span><span class="res gp'+(nowNet<0?' neg':'')+'">'+(nowNet<0?'▲':'')+yen(Math.abs(nowNet))+'円</span><span class="lbl">※現時点</span></div>';
+  let keH='<div class="ke"><span class="lbl">'+revLbl+'</span><span class="num">'+yen(a.S)+'円</span><span class="op">×</span><span class="num">'+pct(a.r,a.r*100%1?1:0)+'</span><span class="op">＝</span><span class="res ga">'+yen(GA)+'円</span><span class="lbl">（社内経費）</span></div>'
+   +'<div class="ke"><span class="lbl">原価</span><span class="num">'+yen(C)+'円</span><span class="op">＋</span><span class="lbl">社内経費</span><span class="num ga">'+yen(GA)+'円</span><span class="op">＝</span><span class="res">'+yen(tot)+'円</span><span class="lbl">（合計仕入）</span></div>';
+  if(a.kinOn){ keH+='<div class="ke"><span class="lbl">立替</span><span class="num">'+yen(a.tateka)+'円</span><span class="op">×</span><span class="num">年利'+pct(kinri(),1)+'</span><span class="op">×</span><span class="num">'+a.years.toFixed(1)+'年</span><span class="op">＝</span><span class="res" style="color:var(--bad)">'+yen(a.risoku)+'円</span><span class="lbl">（利息）</span></div>'; }
+  keH+='<div class="ke hl"><span class="lbl">'+revLbl+'</span><span class="num">'+yen(S)+'円</span><span class="op">−</span><span class="lbl">仕入</span><span class="num">'+yen(tot)+'円</span>'+(a.kinOn?('<span class="op">−</span><span class="lbl">利息</span><span class="num">'+yen(a.risoku)+'円</span>'):'')+'<span class="op">＝</span><span class="res gp'+(nowNet<0?' neg':'')+'">'+(nowNet<0?'▲':'')+yen(Math.abs(nowNet))+'円</span><span class="lbl">（本来の粗利）※現時点</span></div>';
   document.getElementById('keishiki').innerHTML=keH;
   const el=p.el,C2=C||1,ext=Object.entries(p.py||{}).filter(([k])=>!['社内原価','現金払い'].includes(k)).sort((x,y)=>y[1]-x[1]),top=ext[0]||['-',0];
   // 月セレクタ：累計／各月で費目・支払先を切替
