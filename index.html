@@ -68,6 +68,47 @@ table.lst .gp.ok{color:var(--ok)}table.lst .gp.bad{color:var(--bad)}
 table.lst .rate{color:var(--sub);font-size:11px;font-weight:700}
 table.lst .go{color:var(--acc);font-weight:900}
 table.lst tr.total td{background:var(--bg);font-weight:900;border-top:2px solid var(--line)}
+/* ===== 一覧カード（事務的さを消す見せ方・2026-10-14） ===== */
+.clist{display:flex;flex-direction:column;gap:10px}
+.crow{display:flex;align-items:center;gap:18px;border:1px solid var(--line);border-radius:15px;padding:16px 20px 16px 22px;cursor:pointer;position:relative;overflow:hidden}
+.crow.ok{background:var(--card)}
+.crow.warn{background:linear-gradient(90deg,var(--warnbg),var(--card) 62%)}
+.crow.bad{background:linear-gradient(90deg,var(--badbg),var(--card) 62%)}
+.crow::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px}
+.crow.ok::before{background:var(--ok)}.crow.warn::before{background:var(--warn)}.crow.bad::before{background:var(--bad)}
+.crow:hover{box-shadow:0 7px 24px rgba(30,45,80,.13)}
+.crow .main{flex:1;min-width:0}
+.crow .rhead{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.crow .nm{font-size:15.5px;font-weight:800;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.crow .ctag{font-size:10px;font-weight:800;padding:1px 7px;border-radius:5px;background:var(--bg);color:var(--sub)}
+.crow .verdict{font-size:12px;font-weight:700;margin-top:4px}
+.crow .verdict.ok{color:var(--ok)}.crow .verdict.warn{color:var(--warn)}.crow .verdict.bad{color:var(--bad)}
+.crow .verdict .who{color:var(--sub);font-weight:600}
+.crow .subfigs{display:flex;gap:22px;margin-top:9px}
+.crow .clab{font-size:10px;color:var(--sub);font-weight:700}
+.crow .cval{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.crow .cval .u{font-size:10px;color:var(--sub);font-weight:700}
+.crow .chero{flex:0 0 auto;display:flex;align-items:center;gap:16px}
+.crow .gpbox{text-align:right;line-height:1.05}
+.crow .gpbox .clab{color:var(--ink);font-weight:800}
+.crow .gpbox .cval.big{font-size:25px;font-weight:900;letter-spacing:-.015em}
+.crow .cval.big .u{font-size:12px;font-weight:800}
+.crow .cval.big.ok{color:var(--ok)}.crow .cval.big.bad{color:var(--bad)}
+.crow .cgauge{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto}
+.crow .cgauge i{width:44px;height:44px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-style:normal;font-size:12.5px;font-weight:900;line-height:1;text-align:center}
+.crow .cgauge i.ok{color:var(--ok)}.crow .cgauge i.warn{color:var(--warn)}.crow .cgauge i.bad{color:var(--bad)}
+.crow .cgauge i span{display:block;font-size:8px;font-weight:700;color:var(--sub);margin-top:1px}
+.clist .crow{animation:fadeUp .28s both}
+.clist .crow:nth-child(2){animation-delay:.03s}
+.clist .crow:nth-child(3){animation-delay:.06s}
+.clist .crow:nth-child(4){animation-delay:.09s}
+.clist .crow:nth-child(n+5){animation-delay:.12s}
+.crow:active{transform:scale(.996)}
+.cempty{color:var(--sub);text-align:center;padding:22px;font-weight:700}
+.ctotal{display:flex;align-items:center;gap:18px;padding:12px 22px 2px;color:var(--sub);font-weight:800;font-size:12.5px;flex-wrap:wrap}
+.ctotal .cl{flex:1;min-width:120px}.ctotal .cm{font-variant-numeric:tabular-nums}
+.ctotal .cg.bad{color:var(--bad)}.ctotal .cg.ok{color:var(--ok)}
+@media(max-width:560px){.crow{flex-direction:column;align-items:stretch;gap:12px;padding:14px 16px}.crow .chero{justify-content:space-between}.crow .gpbox{text-align:left}.crow .gpbox .cval.big{font-size:22px}}
 table.lst.mini th,table.lst.mini td{padding:7px 10px;font-size:12.5px}
 .up{color:var(--ok)}.down{color:var(--bad)}.mid2{color:var(--warn)}
 /* 詳細 */
@@ -210,7 +251,8 @@ table.lst tbody tr:active{transform:scale(.996)}
   .grp .gbody,.grp.collapsed .gbody{height:auto!important;opacity:1!important}
   .seclbl.ghead{cursor:auto}
   .hero,.sec{box-shadow:none!important;break-inside:avoid}
-  table.lst tbody tr,.sec,.hero{break-inside:avoid}
+  table.lst tbody tr,.sec,.hero,.crow{break-inside:avoid}
+  .crow{box-shadow:none!important}
   *{animation:none!important;transition:none!important}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -271,15 +313,11 @@ table.lst tbody tr:active{transform:scale(.996)}
   <div id="listView">
     <div class="grp" id="grpUn">
     <h2 class="seclbl ghead"><svg class="chev" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="ic un" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>未成工事（進行中）<span id="cnt-un"></span></h2>
-    <div class="gbody"><div class="sheet"><table class="lst"><thead><tr>
-      <th class="l">工事名</th><th class="l">担当者</th><th class="th-rev">請負金額</th><th>仕入<span style="font-weight:400">（原価＋社内経費）</span></th><th class="th-gp">粗利（着地見込み）</th><th></th>
-    </tr></thead><tbody id="tbUn"></tbody></table></div></div>
+    <div class="gbody"><div class="clist" id="tbUn"></div></div>
     </div>
     <div class="grp" id="grpDn">
     <h2 class="seclbl ghead"><svg class="chev" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="ic dn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.2l2.6 2.6L16 9.4"/></svg>完成工事<span id="cnt-dn"></span></h2>
-    <div class="gbody"><div class="sheet"><table class="lst"><thead><tr>
-      <th class="l">工事名</th><th class="l">担当者</th><th class="th-rev">請負金額</th><th>仕入<span style="font-weight:400">（原価＋社内経費）</span></th><th class="th-gp th-gp-dn">粗利（確定）</th><th></th>
-    </tr></thead><tbody id="tbDn"></tbody></table></div></div>
+    <div class="gbody"><div class="clist" id="tbDn"></div></div>
     </div>
   </div>
   <div id="aggView" style="display:none"><h2 class="seclbl" id="aggTitle"></h2><div class="sheet"><table class="lst" id="aggTbl"></table></div></div>
@@ -288,6 +326,7 @@ table.lst tbody tr:active{transform:scale(.996)}
 </div>
 <div id="detail">
   <button class="back" id="back">← 工事一覧へ戻る</button><button id="printBtn2" class="prbtn" style="margin-left:10px" title="この工事の詳細を印刷／PDFで保存"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg>印刷 / PDF</button>
+  <span class="revtog" id="kinTogD" style="margin-left:10px;vertical-align:middle" title="この工事を利息込みで見るか切替"><button data-kid="0">利息なし</button><button data-kid="1">利息込み</button></span>
   <div class="meta" id="meta"></div>
   <div class="hero" id="hero"><div class="sig" id="sig"></div><div class="mid"><div class="st" id="st"></div><div class="subt" id="hsub"></div></div>
     <div class="amt"><div class="l" id="bigamtLab">本来の粗利（着地見込み）</div><div class="big" id="bigamt"></div><div class="vs" id="vsamt"></div></div></div>
@@ -382,6 +421,18 @@ function calc(p){
   const recCls=recBad?'bad':recWarn?'warn':'ok';
   return{p,r,S,contract,useUri,B,GA,C,Bok,hasTgt,start,fin,asof,done,timeR,costR,tgt,land,landGross,risoku,kinOn,years,diff,tgtRate,landRate,cls,Szei,rec,mishu,kaishu,tateka,recBad,recWarn,recCls};
 }
+/* ===== 一覧カードの初回アニメ（カウントアップ＋ゲージ回転・1回だけ） ===== */
+function _cuAnim(el,to,dur){const t0=performance.now();(function tk(t){let p=Math.min(1,(t-t0)/dur);p=1-Math.pow(1-p,3);el.textContent=man(to*p);if(p<1)requestAnimationFrame(tk);else el.textContent=man(to);})(t0);}
+function _gAnim(g,to,dur){const col=g.dataset.state==='bad'?'var(--bad)':g.dataset.state==='warn'?'var(--warn)':'var(--ok)';const t0=performance.now();(function tk(t){let p=Math.min(1,(t-t0)/dur);p=1-Math.pow(1-p,3);g.style.background='conic-gradient('+col+' '+(to*p*360)+'deg, var(--line) 0)';if(p<1)requestAnimationFrame(tk);})(t0);}
+function animateListOnce(){
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  const rows=[...document.querySelectorAll('#listView .crow')];
+  rows.forEach(r=>{r.querySelectorAll('.cu').forEach(c=>c.textContent=man(0));r.querySelectorAll('.cgauge').forEach(g=>g.style.background='conic-gradient(var(--line) 0deg, var(--line) 0)');});
+  rows.forEach((r,i)=>setTimeout(()=>{
+    r.querySelectorAll('.cu').forEach(c=>_cuAnim(c,+c.dataset.v,700));
+    r.querySelectorAll('.cgauge').forEach(g=>_gAnim(g,+g.dataset.fill,800));
+  },Math.min(i,20)*45));
+}
 /* ===== 一覧 ===== */
 function renderList(){
   const A=P.map(calc);
@@ -390,20 +441,37 @@ function renderList(){
   document.getElementById('cSum').innerHTML='全 <b>'+A.length+'</b> 工事　<span class="ok">🟢'+n.ok+'</span>　<span class="warn">🟡'+n.warn+'</span>　<span class="bad">🔴'+n.bad+'</span>　｜ 粗利 合計 <b>'+man(sGp)+'円</b>';
   // 対象年度セレクタ＋取り込み月カバレッジ（6月決算＝7月〜翌6月）
   renderFYCover();
+  const uriLbl=(revBase==='uriage')?'累計売上':'請負金額';
+  const dps=d=>{d=d||'';return d.indexOf('元請')>=0?'元請':d.indexOf('下請')>=0?'下請':d.indexOf('商社')>=0?'商社':d;};
   const rowHtml=(a,i)=>{
-    const shiire=a.S-a.land;   // 仕入＝請負−粗利 なので 請負−仕入＝粗利 が成立
-    const kiki='工期 '+(a.start.getMonth()+1)+'/'+a.start.getDate()+'〜'+(a.fin.getMonth()+1)+'/'+a.fin.getDate()+(a.done?'（完成）':'（進捗'+pct(a.timeR,0)+'）');
-    const _ref=a.p.asof||((a.p.months&&a.p.months.length)?a.p.months[a.p.months.length-1].end:'');const _y=+String(_ref).slice(0,4),_m=+String(_ref).slice(5,7);const fyt=(_y&&_m)?'<span class="fytag">'+(_m>=7?_y:_y-1)+'年度</span>':'';
-    return '<tr data-i="'+i+'"><td class="l"><span class="dot '+a.cls+'"></span><span class="nm">'+esc(a.p.name)+'</span>'+(a.p.real?'':' <span class="samp">（サンプル）</span>')+'<div class="cli">'+fyt+esc(a.p.client)+' ／ '+esc(a.p.dept)+' ／ '+kiki+'</div></td>'
-     +'<td class="l">'+esc(a.p.tanto||'—')+'</td>'
-     +'<td class="num">'+yen(a.S)+'</td>'
-     +'<td class="num">'+yen(shiire)+'</td>'
-     +'<td class="num gp '+a.cls+'">'+(a.land<0?'▲':'')+yen(Math.abs(a.land))+'<div class="rate">粗利率 '+pct(a.landRate)+'</div></td>'
-     +'<td class="go">›</td></tr>';};
-  const section=(list)=>{ if(!list.length)return '<tr><td class="l" colspan="6" style="color:var(--sub);text-align:center">該当なし</td></tr>';
+    const shiire=a.S-a.land;   // 合計仕入＝売上基準−本来の粗利
+    const _ref=a.p.asof||((a.p.months&&a.p.months.length)?a.p.months[a.p.months.length-1].end:'');const _y=+String(_ref).slice(0,4),_m=+String(_ref).slice(5,7);const fyt=(_y&&_m)?'<span class="ctag">'+(_m>=7?_y:_y-1)+'年度</span>':'';
+    const loss=a.land<0;
+    const vtxt=(a.cls==='bad')?(a.done?'完成したが赤字　▲'+man(-a.land)+'円':'このままだと赤字ペース　▲'+man(-a.land)+'円')
+             :(a.cls==='warn')?'薄利　あと一歩'
+             :(a.landRate>=0.2?'優良ペース':'黒字');
+    const fill=Math.max(0,Math.min(1,a.landRate));
+    const gcol=a.cls==='bad'?'var(--bad)':a.cls==='warn'?'var(--warn)':'var(--ok)';
+    const rtxt=Math.round(a.landRate*100)+'%';
+    const prog=a.done?'完成':'進捗'+pct(a.timeR,0);
+    return '<div class="crow '+a.cls+'" data-i="'+i+'">'
+     +'<div class="main">'
+       +'<div class="rhead"><span class="nm">'+esc(a.p.name)+'</span>'+(a.p.real?'':'<span class="ctag">サンプル</span>')+fyt+'<span class="ctag">'+esc(dps(a.p.dept))+'</span></div>'
+       +'<div class="verdict '+a.cls+'">'+vtxt+'<span class="who">　／　'+esc(a.p.tanto||'—')+'　／　'+prog+'</span></div>'
+       +'<div class="subfigs">'
+         +'<div class="subfig"><div class="clab">'+uriLbl+'</div><div class="cval"><span class="cu" data-v="'+a.S+'">'+man(a.S)+'</span><span class="u"> 円</span></div></div>'
+         +'<div class="subfig"><div class="clab">合計仕入</div><div class="cval"><span class="cu" data-v="'+shiire+'">'+man(shiire)+'</span><span class="u"> 円</span></div></div>'
+       +'</div>'
+     +'</div>'
+     +'<div class="chero">'
+       +'<div class="gpbox"><div class="clab">本来の粗利</div><div class="cval big '+(loss?'bad':'ok')+'">'+(loss?'▲':'')+'<span class="cu" data-v="'+Math.abs(a.land)+'">'+man(Math.abs(a.land))+'</span><span class="u"> 円</span></div></div>'
+       +'<div class="cgauge" data-fill="'+fill+'" data-state="'+a.cls+'" style="background:conic-gradient('+gcol+' '+(fill*360)+'deg, var(--line) 0)"><i class="'+a.cls+'">'+rtxt+'<span>粗利率</span></i></div>'
+     +'</div>'
+     +'</div>';};
+  const section=(list)=>{ if(!list.length)return '<div class="cempty">該当なし</div>';
     let s=0,sh=0;const r=list.map(x=>rowHtml(x.a,x.i)).join('');
     list.forEach(x=>{s+=x.a.S;sh+=x.a.S-x.a.land;});const g=list.reduce((t,x)=>t+x.a.land,0);
-    return r+'<tr class="total"><td class="l">合計（'+list.length+'工事）</td><td></td><td class="num">'+yen(s)+'</td><td class="num">'+yen(sh)+'</td><td class="num '+(g<0?'bad':'ok')+'">'+(g<0?'▲':'')+yen(Math.abs(g))+'</td><td></td></tr>';};
+    return r+'<div class="ctotal"><span class="cl">合計（'+list.length+'工事）</span><span class="cm">'+uriLbl+' '+man(s)+'円</span><span class="cm">仕入 '+man(sh)+'円</span><span class="cg '+(g<0?'bad':'ok')+'">粗利 '+(g<0?'▲':'')+man(Math.abs(g))+'円</span></div>';};
   // 絞り込み選択肢（部門・担当）をデータから生成
   const fillSel=(id,label,vals,cur)=>{const el=document.getElementById(id);el.innerHTML='<option value="">'+label+'：すべて</option>'+vals.map(v=>'<option value="'+esc(v)+'"'+(v===cur?' selected':'')+'>'+esc(v)+'</option>').join('');el.value=cur||'';};
   fillSel('fDept','部門',[...new Set(A.map(a=>a.p.dept).filter(Boolean))],fDept);
@@ -436,13 +504,10 @@ function renderList(){
   document.getElementById('meetingView').style.display=isMeet?'':'none';
   document.getElementById('fbar').style.display=isList?'':'none';
   if(isList){
-    const uri=revBase==='uriage';
-    document.querySelectorAll('.th-rev').forEach(t=>t.textContent=uri?'累計売上':'請負金額');
-    document.querySelectorAll('.th-gp:not(.th-gp-dn)').forEach(t=>t.textContent=uri?'粗利（実績）':'粗利（着地見込み）');
-    document.querySelectorAll('.th-gp-dn').forEach(t=>t.textContent='粗利（確定）');
     const un=idx.filter(x=>!x.a.done),dn=idx.filter(x=>x.a.done);
     document.getElementById('tbUn').innerHTML=section(un);
     document.getElementById('tbDn').innerHTML=section(dn);
+    if(!window._listAnimated){window._listAnimated=true;animateListOnce();}
     document.getElementById('cnt-un').textContent=un.length+'件';
     document.getElementById('cnt-dn').textContent=dn.length+'件';
   }else if(isBun){
@@ -596,6 +661,7 @@ function openDetail(i){curDetail=i;_animBig=true;document.getElementById('list')
 function renderDetail(i){
   const a=calc(P[i]),p=a.p,S=a.S,GA=a.GA,C=a.C,tgt=a.tgt,land=a.land,diff=a.diff;
   const revLbl=a.useUri?'累計売上':'請負';
+  {const kd=document.getElementById('kinTogD');if(kd)kd.querySelectorAll('button').forEach(x=>x.classList.toggle('on',(x.dataset.kid==='1')===withKin));}
   const SIGSVG={ok:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.5h.01"/></svg>',bad:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 4L2 18.6A2 2 0 003.7 21.6h16.6A2 2 0 0022 18.6L13.7 4a2 2 0 00-3.4 0z"/><path d="M12 9.5v4"/><path d="M12 17.5h.01"/></svg>'};
   const sig=SIGSVG[a.cls],stt={ok:'目標どおり 黒字で着地',warn:'目標割れの注意',bad:'赤字の恐れ'}[a.cls];
   document.getElementById('meta').innerHTML='['+sector(p)+'] <b style="color:var(--ink)">'+esc(p.name)+'</b>'+(p.real?'':' <span class="samp">（サンプル）</span>')+' ／ '+esc(p.client)+' ／ 担当 '+esc(p.tanto||'—')+' ／ 工期 '+(a.start.getMonth()+1)+'/'+a.start.getDate()+'〜'+(a.fin.getMonth()+1)+'/'+a.fin.getDate()+' ／ 基準 '+(a.asof.getMonth()+1)+'/'+a.asof.getDate();
@@ -695,6 +761,7 @@ document.getElementById('more').onclick=function(){const d=document.getElementBy
 document.getElementById('rate').oninput=()=>{renderList();if(curDetail!=null)renderDetail(curDetail);};
 document.getElementById('kinri').oninput=()=>{renderList();if(curDetail!=null)renderDetail(curDetail);};
 document.getElementById('kinTog').onclick=e=>{const b=e.target.closest('button[data-ki]');if(!b)return;withKin=b.dataset.ki==='1';document.querySelectorAll('#kinTog button').forEach(x=>x.classList.toggle('on',(x.dataset.ki==='1')===withKin));document.getElementById('kinri').style.opacity=withKin?'1':'.45';document.getElementById('kinriLab').style.opacity=withKin?'1':'.45';renderList();if(curDetail!=null)renderDetail(curDetail);};
+document.getElementById('kinTogD').onclick=e=>{const b=e.target.closest('button[data-kid]');if(!b)return;withKin=b.dataset.kid==='1';document.querySelectorAll('#kinTog button').forEach(x=>x.classList.toggle('on',(x.dataset.ki==='1')===withKin));document.querySelectorAll('#kinTogD button').forEach(x=>x.classList.toggle('on',(x.dataset.kid==='1')===withKin));document.getElementById('kinri').style.opacity=withKin?'1':'.45';document.getElementById('kinriLab').style.opacity=withKin?'1':'.45';if(curDetail!=null)renderDetail(curDetail);renderList();};
 document.getElementById('kinri').style.opacity='.45';document.getElementById('kinriLab').style.opacity='.45';
 document.getElementById('aggTabs').onclick=e=>{const b=e.target.closest('button[data-v]');if(b){aggView=b.dataset.v;renderList();}};
 /* 外枠3ステップ：取込→表示→共有 */
