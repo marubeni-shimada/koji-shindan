@@ -893,10 +893,10 @@ let gasT=null;
 function gasPill(txt,color){const el=document.getElementById('gasState');if(!GAS_URL){el.style.display='none';return;}el.style.display='';el.innerHTML=txt;el.style.color=color||'';}
 function scheduleGas(){ if(!GAS_URL)return; clearTimeout(gasT); gasT=setTimeout(pushGas,800); }
 function pushGas(){ if(!GAS_URL)return; gasPill('☁ 保存中…','var(--sub)');
-  fetch(GAS_URL,{method:'POST',body:JSON.stringify({projects:P}),headers:{'Content-Type':'text/plain;charset=utf-8'}})
+  fetch(GAS_URL,{method:'POST',body:JSON.stringify({projects:P, pages:LOADED}),headers:{'Content-Type':'text/plain;charset=utf-8'}})
     .then(()=>gasPill('☁ クラウド保存済','var(--ok)')).catch(()=>gasPill('⚠ 保存エラー','var(--bad)')); }
 function pullGas(){ if(!GAS_URL)return; gasPill('☁ 読込中…','var(--sub)');
-  fetch(GAS_URL).then(r=>r.json()).then(o=>{ if(o&&o.projects&&o.projects.length){ P=o.projects; aggView='list'; renderList(); osGo('show'); gasPill('☁ クラウドの最新を表示','var(--ok)'); } else { renderList(); gasPill('☁ クラウド接続中（データなし）',''); } })
+  fetch(GAS_URL).then(r=>r.json()).then(o=>{ if(o&&o.projects&&o.projects.length){ P=o.projects; LOADED=o.pages||[]; aggView='list'; renderList(); osGo('show'); gasPill('☁ クラウドの最新を表示','var(--ok)'); } else { renderList(); gasPill('☁ クラウド接続中（データなし）',''); } })
     .catch(()=>{ renderList(); gasPill('⚠ 読込エラー','var(--bad)'); })
     .finally(hideLoad); }
 /* 起動：GASがある時はクラウド読込までローディング表示（サンプルを一瞬出さない）。無い/失敗時のみ埋め込みを描画 */
