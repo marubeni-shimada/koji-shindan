@@ -82,7 +82,7 @@ table.lst tr.total td{background:var(--bg);font-weight:900;border-top:2px solid 
 .crow .nm{font-size:15.5px;font-weight:800;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .crow .ctag{font-size:10px;font-weight:800;padding:1px 7px;border-radius:5px;background:var(--bg);color:var(--sub)}
 .crow .mtag{font-size:10px;font-weight:800;padding:1px 7px;border-radius:5px;background:#e9f0fb;color:#2f6ad0}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .crow .mtag{background:#15233a;color:#6ea4f0}}
+.crow .gtag{font-size:10px;font-weight:800;padding:1px 7px;border-radius:5px;background:#e7f3ee;color:#1f6f54}@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .crow .mtag{background:#15233a;color:#6ea4f0}:root:not([data-theme="light"]) .crow .gtag{background:#163a2b;color:#5fcaa0}}
 .crow .verdict{font-size:12px;font-weight:700;margin-top:4px}
 .crow .verdict.ok{color:var(--ok)}.crow .verdict.warn{color:var(--warn)}.crow .verdict.bad{color:var(--bad)}
 .crow .verdict .who{color:var(--sub);font-weight:600}
@@ -459,7 +459,7 @@ function renderList(){
     const prog=a.done?'完成':'進捗'+pct(a.timeR,0);
     return '<div class="crow '+a.cls+'" data-i="'+i+'">'
      +'<div class="main">'
-       +'<div class="rhead"><span class="nm">'+esc(a.p.name)+'</span>'+(a.p.real?'':'<span class="ctag">サンプル</span>')+fyt+'<span class="ctag">'+esc(dps(a.p.dept))+'</span>'+mtag+'</div>'
+       +'<div class="rhead"><span class="nm">'+esc(a.p.name)+'</span>'+(a.p.real?'':'<span class="ctag">サンプル</span>')+fyt+'<span class="ctag">'+esc(dps(a.p.dept))+'</span>'+(a.p.gaiyou?'<span class="gtag" title="工事概要">'+esc(a.p.gaiyou)+'</span>':'')+mtag+'</div>'
        +'<div class="verdict '+a.cls+'">'+vtxt+'<span class="who">　／　'+esc(a.p.tanto||'—')+'　／　'+prog+'</span></div>'
        +'<div class="subfigs">'
          +'<div class="subfig"><div class="clab">'+uriLbl+'</div><div class="cval"><span class="cu" data-v="'+a.S+'">'+man(a.S)+'</span><span class="u"> 円</span></div></div>'
@@ -821,7 +821,7 @@ function toProjects(pages){
   const by={};Object.values(mk).forEach(m=>{(by[m.info.id]=by[m.info.id]||[]).push(m);});
   return Object.keys(by).map(id=>{const ms=by[id].slice().sort((a,b)=>new Date(a.end)-new Date(b.end)),last=ms[ms.length-1],I=last.info;
     const el={},py={};ms.forEach(m=>{for(const k in m.el)el[k]=(el[k]||0)+m.el[k];for(const k in m.py)py[k]=(py[k]||0)+m.py[k];});
-    return {name:I.name,client:I.client,dept:I.dept||'土木',tanto:I.tanto,real:true,S:I.contract,Suri:I.uriage,B:I.budget,C:I.ledger||ms.reduce((a,m)=>a+m.cost,0),
+    return {name:I.name,client:I.client,dept:I.dept||'土木',gaiyou:I.gaiyou||'',tanto:I.tanto,real:true,S:I.contract,Suri:I.uriage,B:I.budget,C:I.ledger||ms.reduce((a,m)=>a+m.cost,0),
       Szei:I.Szei,mishu:I.mishu,mokuhyoJun:I.mokuhyoJun,rec:I.rec,start:I.start,fin:I.fin,kansei:I.kansei,asof:last.end,el,py,
       months:ms.map(m=>({end:m.end,cost:m.cost,el:m.el,py:m.py,uriM:m.info.uriM||0,costM:(m.info.costM||m.cost),ledger:m.info.ledger||0}))};});
 }
@@ -843,7 +843,7 @@ function parseLedgerNew(a){
   const num=v=>{const n=+v;return isNaN(n)?0:n;};
   const start=ddv(g(10,4))||'';                          // 受注日 E10（契約工期が空なら代用）
   const info={id:code,name,budget:num(g(7,11)),Szei:Math.round(num(g(3,14))*1.1),client:String(g(6,4)||'').trim(),
-    ga:num(g(8,11)),dept:String(g(6,11)||'').trim(),contract:num(g(3,14)),uriage:num(g(4,14)),mokuhyoJun:num(g(9,11)),
+    ga:num(g(8,11)),dept:String(g(6,11)||'').trim(),gaiyou:String(g(8,4)||'').trim(),contract:num(g(3,14)),uriage:num(g(4,14)),mokuhyoJun:num(g(9,11)),
     uriM:num(g(8,14)),costM:num(g(9,14)),
     ledger:num(g(5,14)),tanto:String(g(4,11)||'').trim(),rec:num(g(11,14)),
     start:(ddv(g(10,4))||ddv(g(11,4))||start),fin:(ddv(g(10,7))||ddv(g(11,7))||'')};
