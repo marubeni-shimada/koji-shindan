@@ -342,6 +342,7 @@ table.lst tbody tr:active{transform:scale(.996)}
   <button class="more" id="more">＋ 詳細（計算の内訳・打ち手）を見る</button>
   <div class="dd" id="dd">
     <div class="sec"><h2>📐 社内経費・本来の粗利の計算</h2><div id="keishiki"></div></div>
+    <div class="sec" id="refIntSec" style="display:none"><h2>🏦 利息（参考値）＝赤字に対する金利負担</h2><div id="refIntBody"></div></div>
     <div class="sec"><h2>🎯 いちばん効く打ち手</h2><div class="act" id="action"></div></div>
     <div class="foot" id="dfoot"></div>
   </div>
@@ -390,12 +391,43 @@ function rate(){return (+document.getElementById('rate').value||0)/100;}
 function kinri(){const el=document.getElementById('kinri');return el?(+el.value||0)/100:0;}   // 借入年利
 let aggView='list',fSector='',fDept='',fTanto='',fState='',sortKey='watch',revBase='uriage',fQ='',withKin=false;
 function isDone(p){ if(p.kansei)return true; try{return D(p.asof)>=D(p.fin);}catch(e){return false;} }
+/* ===== 利息（参考値）＝赤字(累計原価−入金)に年利2%。公共は請負×40%前払を入金に上乗せ。民間は毎月。(前月+今月の赤字)/2を月割りで累計 ===== */
+function isPublicWork(p){   // 官公庁発注工事＝公共（前払あり）。工事概要があれば優先、無ければ発注者名で判定（既存sector相当）
+  var g=String(p.gaiyou||'');
+  if(g.indexOf('官公庁発注')>=0) return true;
+  if(g.indexOf('民間')>=0) return false;
+  var c=String(p.client||'').trim();
+  return /整備局|国土交通|事務所|役所|NEXCO|ネクスコ|公団|公社|機構|企業団|水道局|下水道|国立|公共/.test(c+' '+(p.name||'')) || /(県|都|道|府|市|町|村|区)$/.test(c);
+}
+function refInterest(p){
+  const RATE=0.02;                                  // 年利2%（参考）
+  const contract=p.S||0, pub=isPublicWork(p);
+  const prepay=Math.round(contract*0.4);            // 公共の前払（請負×40%・別タブ用）
+  const ms=(p.months||[]).slice().sort((a,b)=>new Date(a.end)-new Date(b.end));
+  const run=(income)=>{                              // income(m)=その月の入金額
+    let cumCost=0, prevDef=null, interest=0; const rows=[];
+    ms.forEach(m=>{
+      cumCost = (m.ledger>0? m.ledger : cumCost+m.cost);         // 累計原価（台帳の月別累計。無ければ月原価の積上げ）
+      const inc=income(m);                                       // 入金
+      const def=Math.max(0, cumCost-inc);                        // 赤字＝累計原価−入金
+      const base=(prevDef==null)?def:(prevDef+def)/2;           // (前月+今月の赤字)/2（1月目は当月のみ）
+      const mInt=Math.round(base*RATE/12);                       // 月利息（年利2%の月割り）
+      interest+=mInt; rows.push({end:m.end,cumCost,inc,def,mInt,interest}); prevDef=def;
+    });
+    return {rows,interest};
+  };
+  const main=run(m=>(m.rec||0));                     // 主：台帳の累計回収
+  const prepayS=pub?run(m=>(m.rec||0)+prepay):null;  // 公共・別タブ：回収＋前払40%
+  const fullS=pub?run(m=>contract):null;             // 公共・別タブ：全額入金(請負)
+  return {pub,prepay,rate:RATE, main, prepayS, fullS, months:ms.length};
+}
 function calc(p){
   const r=rate(),contract=p.S,C=p.C;
   // 売上の基準：累計売上ベース（実績到達）/ 請負ベース（当初契約）。社内経費は選択中の売上基準×13%（累計売上ベースなら累計売上×13%）
   const useUri=(revBase==='uriage' && p.Suri>0);
   const S=useUri?p.Suri:contract;
-  const GA=Math.round(S*r);
+  // #1 累計売上が0のときは社内経費を計算しない（売上基準モードで売上0なら0）
+  const GA=(revBase==='uriage' && !(p.Suri>0)) ? 0 : Math.round(S*r);
   const start=D(p.start),fin=D(p.fin),asof=D(p.asof),done=isDone(p);
   const timeR=done?1:Math.min(1,Math.max(.03,(asof-start)/(fin-start)));
   const B=p.B,Bok=B>0 && B<contract*3;   // 実行予算が妥当に入っているか（台帳で未設定=0 の工事がある）
@@ -689,7 +721,44 @@ function renderDetail(i){
    +'<div class="ke"><span class="lbl">原価</span><span class="num">'+yen(C)+'円</span><span class="op">＋</span><span class="lbl">社内経費</span><span class="num ga">'+yen(GA)+'円</span><span class="op">＝</span><span class="res">'+yen(tot)+'円</span><span class="lbl">（合計仕入）</span></div>';
   if(a.kinOn){ keH+='<div class="ke"><span class="lbl">立替</span><span class="num">'+yen(a.tateka)+'円</span><span class="op">×</span><span class="num">年利'+pct(kinri(),1)+'</span><span class="op">×</span><span class="num">'+a.years.toFixed(1)+'年</span><span class="op">＝</span><span class="res" style="color:var(--bad)">'+yen(a.risoku)+'円</span><span class="lbl">（利息）</span></div>'; }
   keH+='<div class="ke hl"><span class="lbl">'+revLbl+'</span><span class="num">'+yen(S)+'円</span><span class="op">−</span><span class="lbl">仕入</span><span class="num">'+yen(tot)+'円</span>'+(a.kinOn?('<span class="op">−</span><span class="lbl">利息</span><span class="num">'+yen(a.risoku)+'円</span>'):'')+'<span class="op">＝</span><span class="res gp'+(nowNet<0?' neg':'')+'">'+(nowNet<0?'▲':'')+yen(Math.abs(nowNet))+'円</span><span class="lbl">（本来の粗利）※現時点</span></div>';
+  // #2 社内経費のタイミング説明（原価は粗利より先に発生＝今月末の累計売上の社内経費は本来は先月末までの原価に対応）
+  keH+='<div class="ke" style="margin-top:4px;font-size:11px;color:var(--sub);line-height:1.5">※ 社内経費は「選択中の売上基準×'+pct(a.r,1)+'」で<b>累計表示</b>。原価は粗利より先に発生するため、<b>今月末の累計売上から出した社内経費は、本来は先月末までの原価に対応</b>するものです（累計での概算表示）。</div>';
   document.getElementById('keishiki').innerHTML=keH;
+  // 🏦 利息（参考値）＝赤字(累計原価−入金)に年利2%。公共は請負×40%前払を入金に上乗せ
+  (function(){
+    var sec=document.getElementById('refIntSec'),body=document.getElementById('refIntBody'); if(!sec||!body)return;
+    var ri=refInterest(p);
+    if(!ri.main.rows.length || ri.months<1){ sec.style.display='none'; return; }
+    sec.style.display='';
+    var honrai=a.landGross;
+    var scen=[{k:'rec',name:'回収ベース',res:ri.main,desc:'入金＝<b>台帳の累計回収額</b>'}];
+    if(ri.pub){
+      scen.push({k:'pre',name:'前払40%込み',res:ri.prepayS,desc:'入金＝累計回収＋<b>前払（請負×40%＝'+yen(ri.prepay)+'）</b>'});
+      scen.push({k:'full',name:'満額入金(請負)',res:ri.fullS,desc:'入金＝<b>請負金額を満額受領</b>と仮定'});
+    }
+    function rowsHtml(res){ return res.rows.map(function(r){
+      var fm=(String(r.end||'').slice(0,7)).replace('-','/');
+      return '<div class="ke"><span class="lbl">'+fm+'</span>'
+        +'<span class="num">原価 '+yen(r.cumCost)+'</span><span class="op">−</span><span class="num">入金 '+yen(r.inc)+'</span>'
+        +'<span class="op">＝</span><span class="num'+(r.def>0?' ga':'')+'">赤字 '+(r.def>0?yen(r.def):'0')+'</span>'
+        +(r.mInt>0?'<span class="op">→</span><span class="res" style="color:var(--bad)">利息 +'+yen(r.mInt)+'</span>':'')+'</div>';
+    }).join(''); }
+    function paint(k){
+      var sc=scen.filter(function(s){return s.k===k;})[0]||scen[0];
+      var afterInt=honrai-sc.res.interest;
+      var head='<div style="font-size:12px;color:var(--sub);margin:6px 0;line-height:1.6">'+sc.desc+'。赤字(累計原価−入金)に<b>年利2%</b>を月割り、(前月＋今月の赤字)÷2 を毎月累計。<span style="color:var(--bad);font-weight:700">あくまで参考値</span>です。</div>';
+      var tot='<div class="ke hl" style="margin-top:4px"><span class="lbl">利息 累計（参考）</span><span class="res" style="color:var(--bad)">'+yen(sc.res.interest)+'円</span>'
+        +'<span class="op">／</span><span class="lbl">本来の粗利 '+(honrai<0?'▲':'')+yen(Math.abs(honrai))+' − 利息 ＝</span>'
+        +'<span class="res gp'+(afterInt<0?' neg':'')+'">'+(afterInt<0?'▲':'')+yen(Math.abs(afterInt))+'円</span><span class="lbl">（利息控除後・参考）</span></div>';
+      var c=document.getElementById('refIntContent'); if(c) c.innerHTML=head+rowsHtml(sc.res)+tot;
+      body.querySelectorAll('.ritab').forEach(function(b){ var on=b.dataset.k===k; b.style.cssText='margin-right:6px;margin-bottom:4px;padding:4px 11px;border-radius:7px;border:1px solid #cbd5e1;cursor:pointer;font-size:12px;'+(on?'background:#1f6f54;color:#fff;font-weight:700':'background:#fff;color:#64748b'); });
+    }
+    var tabs='';
+    if(ri.pub){ tabs='<div style="font-size:11px;color:var(--sub);margin-bottom:5px">官公庁発注工事（公共）：タブで入金の前提を切替</div><div class="mtab" style="margin-bottom:4px">'+scen.map(function(s){return '<button class="ritab" data-k="'+s.k+'"></button>';}).join('')+'</div>'; }
+    body.innerHTML=tabs+'<div id="refIntContent"></div>';
+    if(ri.pub){ body.querySelectorAll('.ritab').forEach(function(b,i){ b.textContent=scen[i].name; }); body.querySelector('.mtab').addEventListener('click',function(ev){ var b=ev.target.closest('.ritab'); if(b) paint(b.dataset.k); }); }
+    paint('rec');
+  })();
   const el=p.el,C2=C||1,ext=Object.entries(p.py||{}).filter(([k])=>!['社内原価','現金払い'].includes(k)).sort((x,y)=>y[1]-x[1]),top=ext[0]||['-',0];
   // 月セレクタ：累計／各月で費目・支払先を切替
   const msF=(p.months||[]).slice().sort((x,y)=>D(x.end)-D(y.end));
@@ -748,7 +817,11 @@ function renderDetail(i){
   } else risSec.style.display='none';
   // 月ごと・累計の原価（行クリックでその月の内訳に切替）
   let cum=0;
+  // #3 期またぎ対応：台帳の累計原価(C) と 入ってる月の原価合計 の差を「過去分（投入月より前）」として先頭に出し、縦集計を累計原価に合わせる
+  const sumCostF=msF.reduce((a,m)=>a+m.cost,0);
+  const pastCost=Math.max(0, C - sumCostF);
   let mh='<thead><tr><th class="l">月</th><th>当月原価</th><th>累計原価</th>'+ELS.map(k=>'<th>'+k+'</th>').join('')+'</tr></thead><tbody>';
+  if(pastCost>0){ cum=pastCost; mh+='<tr style="color:var(--sub)"><td class="l">過去分<span style="font-size:10px;color:var(--sub)">（投入月より前）</span></td><td class="num">'+yen(pastCost)+'</td><td class="num">'+yen(cum)+'</td>'+ELS.map(e=>'<td class="num">—</td>').join('')+'</tr>'; }
   msF.forEach((m,k)=>{cum+=m.cost;mh+='<tr data-m="'+k+'" style="cursor:pointer"><td class="l">'+(D(m.end).getMonth()+1)+'月</td><td class="num">'+yen(m.cost)+'</td><td class="num">'+yen(cum)+'</td>'+ELS.map(e=>'<td class="num" style="font-weight:400">'+(m.el[e]?yen(m.el[e]):'—')+'</td>').join('')+'</tr>';});
   mh+='<tr class="total" data-m="all" style="cursor:pointer"><td class="l">累計</td><td class="num">'+yen(C)+'</td><td class="num">'+yen(C)+'</td>'+ELS.map(e=>'<td class="num">'+(el[e]?yen(el[e]):'—')+'</td>').join('')+'</tr></tbody>';
   document.getElementById('mtbl').innerHTML=mh;
@@ -823,7 +896,7 @@ function toProjects(pages){
     const el={},py={};ms.forEach(m=>{for(const k in m.el)el[k]=(el[k]||0)+m.el[k];for(const k in m.py)py[k]=(py[k]||0)+m.py[k];});
     return {name:I.name,client:I.client,dept:I.dept||'土木',gaiyou:I.gaiyou||'',tanto:I.tanto,real:true,S:I.contract,Suri:I.uriage,B:I.budget,C:I.ledger||ms.reduce((a,m)=>a+m.cost,0),
       Szei:I.Szei,mishu:I.mishu,mokuhyoJun:I.mokuhyoJun,rec:I.rec,start:I.start,fin:I.fin,kansei:I.kansei,asof:last.end,el,py,
-      months:ms.map(m=>({end:m.end,cost:m.cost,el:m.el,py:m.py,uriM:m.info.uriM||0,costM:(m.info.costM||m.cost),ledger:m.info.ledger||0}))};});
+      months:ms.map(m=>({end:m.end,cost:m.cost,el:m.el,py:m.py,uriM:m.info.uriM||0,costM:(m.info.costM||m.cost),ledger:m.info.ledger||0,rec:m.info.rec||0,uri:m.info.uriage||0}))};});
 }
 function sheetToArr(ws){ // '!ref'が狭い場合に備え全セルから範囲再計算
   let maxR=0,maxC=14;Object.keys(ws).forEach(k=>{if(k[0]==='!')return;const m=k.match(/^([A-Z]+)(\d+)$/);if(m){if(+m[2]>maxR)maxR=+m[2];const c=XLSX.utils.decode_col(m[1]);if(c>maxC)maxC=c;}});
@@ -888,7 +961,7 @@ const dz=document.getElementById('drop');
 ['dragleave','drop'].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.remove('on');}));
 dz.addEventListener('drop',e=>{e.preventDefault();if(e.dataTransfer.files.length){showLoad();loadFiles(e.dataTransfer.files).finally(hideLoad);}});
 /* ===== クラウド共有（GAS）===== 池田さんがドロップ→クラウド保存。上司はURLを開くだけで最新の診断を見られる。 */
-const GAS_URL='https://script.google.com/macros/s/AKfycbyYDuM4nv_p6-y5FtwcaWh30OJF-H0QXyon3Lb7JKZ0V_8RBuidDj5pBBZi7Hk9o313/exec';   // クラウド保存ON（上司もURLで最新を見られる）
+const GAS_URL='https://script.google.com/macros/s/AKfycbyYDuM4nv_p6-y5FtwcaWh30OJF-H0QXyon3Lb7JKZ0V_8RBuidDj5pBBZi7Hk9o313/exec';   // クラウド保存ON（上司もURLで最新を見られる）   // クラウド保存ON（上司もURLで最新を見られる）
 let gasT=null;
 function gasPill(txt,color){const el=document.getElementById('gasState');if(!GAS_URL){el.style.display='none';return;}el.style.display='';el.innerHTML=txt;el.style.color=color||'';}
 function scheduleGas(){ if(!GAS_URL)return; clearTimeout(gasT); gasT=setTimeout(pushGas,800); }
