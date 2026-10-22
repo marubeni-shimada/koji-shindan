@@ -404,11 +404,11 @@ function refInterest(p){
   const contract=p.S||0, pub=isPublicWork(p);
   const prepay=Math.round(contract*0.4);            // 公共の前払（請負×40%・別タブ用）
   const ms=(p.months||[]).slice().sort((a,b)=>new Date(a.end)-new Date(b.end));
-  const run=(income)=>{                              // income(m)=その月の入金額
+  const run=(income)=>{                              // income(m,idx)=その月の入金額
     let cumCost=0, prevDef=null, interest=0; const rows=[];
-    ms.forEach(m=>{
+    ms.forEach((m,idx)=>{
       cumCost = (m.ledger>0? m.ledger : cumCost+m.cost);         // 累計原価（台帳の月別累計。無ければ月原価の積上げ）
-      const inc=income(m);                                       // 入金
+      const inc=income(m,idx);                                   // 入金
       const def=Math.max(0, cumCost-inc);                        // 赤字＝累計原価−入金
       const base=(prevDef==null)?def:(prevDef+def)/2;           // (前月+今月の赤字)/2（1月目は当月のみ）
       const mInt=Math.round(base*RATE/12);                       // 月利息（年利2%の月割り）
@@ -416,10 +416,67 @@ function refInterest(p){
     });
     return {rows,interest};
   };
+  const done=isDone(p), lastIdx=ms.length-1;
   const main=run(m=>(m.rec||0));                     // 主：台帳の累計回収
-  const prepayS=pub?run(m=>(m.rec||0)+prepay):null;  // 公共・別タブ：回収＋前払40%
-  const fullS=pub?run(m=>contract):null;             // 公共・別タブ：全額入金(請負)
-  return {pub,prepay,rate:RATE, main, prepayS, fullS, months:ms.length};
+  // 公共の前払（台帳に出ないのでシステムで付与）：完了までは前払40%で横ばい、完了月に残り60%が入り満額
+  const prepayS=pub?run((m,idx)=>(done && idx===lastIdx)?contract:prepay):null;
+  return {pub,prepay,done,rate:RATE, main, prepayS, months:ms.length};
+}
+/* ===== 利息累計の累積グラフ（単一系列・インラインSVG・ダークはCSS変数で追従） ===== */
+function refIntChart(res){
+  var rows=(res&&res.rows)||[]; if(rows.length<2) return '';
+  if(rows[rows.length-1].interest<=0) return '<div style="font-size:11px;color:var(--sub);margin:6px 0">この前提では赤字（原価＞入金）が発生せず、利息は0円です。</div>';
+  var W=560,H=160,PT=16,PB=28,PL=52,PR=66, n=rows.length, maxI=Math.max(1,rows[n-1].interest);
+  var X=function(i){ return PL+(W-PL-PR)*(n>1?i/(n-1):0); };
+  var Y=function(v){ return H-PB-(H-PT-PB)*(v/maxI); };
+  var tl=function(v){ return v>=1e6?man(Math.round(v)):(v>=1e4?(v/1e4).toFixed(1)+'万':yen(Math.round(v))); };
+  var grid=''; for(var g=0;g<=3;g++){ var tv=maxI*g/3, yy=Y(tv);
+    grid+='<line x1="'+PL+'" y1="'+yy+'" x2="'+(W-PR)+'" y2="'+yy+'" stroke="var(--line)" stroke-width="1"'+(g===0?'':' stroke-dasharray="3 3"')+'/>'
+      +'<text x="'+(PL-6)+'" y="'+(yy+3.2)+'" text-anchor="end" font-size="9.5" fill="var(--sub)">'+(g===0?'0':tl(tv))+'</text>'; }
+  grid+='<line x1="'+PL+'" y1="'+Y(0)+'" x2="'+PL+'" y2="'+PT+'" stroke="var(--line)" stroke-width="1"/>';
+  var pts=rows.map(function(r,i){ return X(i)+','+Y(r.interest); });
+  var area='M'+X(0)+','+Y(0)+' L'+pts.join(' L')+' L'+X(n-1)+','+Y(0)+' Z', line='M'+pts.join(' L');
+  var dots=rows.map(function(r,i){ var mm=(+String(r.end||'').slice(5,7))+'月';
+    return '<circle cx="'+X(i)+'" cy="'+Y(r.interest)+'" r="3.6" fill="var(--bad)"><title>'+mm+'：月利息 '+yen(r.mInt)+'円 ／ 利息累計 '+yen(r.interest)+'円（赤字 '+yen(r.def)+'円）</title></circle>'; }).join('');
+  var xlab=rows.map(function(r,i){ return '<text x="'+X(i)+'" y="'+(H-9)+'" text-anchor="middle" font-size="10" fill="var(--sub)">'+(+String(r.end||'').slice(5,7))+'月</text>'; }).join('');
+  var endLab='<text x="'+(X(n-1)+7)+'" y="'+Y(rows[n-1].interest)+'" font-size="11.5" font-weight="700" fill="var(--bad)" dominant-baseline="middle">'+yen(rows[n-1].interest)+'円</text>';
+  return '<div style="font-size:11px;color:var(--sub);margin:10px 0 2px">② 利息累計の推移（縦軸＝利息の累計／横軸＝月・点にカーソルで内訳）</div>'
+    +'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block" role="img" aria-label="利息累計の推移">'
+    +grid
+    +'<path d="'+area+'" fill="var(--bad)" fill-opacity="0.12"/>'
+    +'<path d="'+line+'" fill="none" stroke="var(--bad)" stroke-width="2" stroke-linejoin="round"/>'
+    +dots+xlab+endLab+'</svg>';
+}
+/* ===== 累計原価 vs 入金（前払込）のクロスオーバー図：原価が入金を逆転した「赤字」を見せる（全工事・公共は前払が入金ベースに乗る） ===== */
+function refIntCrossChart(res, prepay){
+  var rows=(res&&res.rows)||[]; if(rows.length<2) return '';
+  var W=560,H=182,PT=16,PB=28,PL=52,PR=80, n=rows.length;
+  var maxV=Math.max.apply(null, rows.map(function(r){return Math.max(r.cumCost,r.inc);}).concat([1]));
+  var X=function(i){ return PL+(W-PL-PR)*(n>1?i/(n-1):0); };
+  var Y=function(v){ return H-PB-(H-PT-PB)*(v/maxV); };
+  var tl=function(v){ return v>=1e6?man(Math.round(v)):(v>=1e4?(v/1e4).toFixed(1)+'万':yen(Math.round(v))); };
+  var grid=''; for(var g=0;g<=3;g++){ var tv=maxV*g/3, yy=Y(tv);
+    grid+='<line x1="'+PL+'" y1="'+yy+'" x2="'+(W-PR)+'" y2="'+yy+'" stroke="var(--line)" stroke-width="1"'+(g===0?'':' stroke-dasharray="3 3"')+'/>'
+      +'<text x="'+(PL-6)+'" y="'+(yy+3.2)+'" text-anchor="end" font-size="9.5" fill="var(--sub)">'+(g===0?'0':tl(tv))+'</text>'; }
+  grid+='<line x1="'+PL+'" y1="'+Y(0)+'" x2="'+PL+'" y2="'+PT+'" stroke="var(--line)" stroke-width="1"/>';
+  var prepayLine=(prepay>0)?'<line x1="'+PL+'" y1="'+Y(prepay)+'" x2="'+(W-PR)+'" y2="'+Y(prepay)+'" stroke="var(--acc)" stroke-width="1" stroke-dasharray="5 3" opacity="0.7"/>'
+      +'<text x="'+(W-PR+4)+'" y="'+(Y(prepay)-4)+'" font-size="9" fill="var(--acc)">前払金 '+man(prepay)+'</text>':'';
+  var costPts=rows.map(function(r,i){return X(i)+','+Y(r.cumCost);});
+  var incPts=rows.map(function(r,i){return X(i)+','+Y(r.inc);});
+  var gap='M'+costPts.join(' L')+' L'+incPts.slice().reverse().join(' L')+' Z';
+  var dotsInc=rows.map(function(r,i){return '<circle cx="'+X(i)+'" cy="'+Y(r.inc)+'" r="3" fill="var(--acc)"><title>'+(+String(r.end).slice(5,7))+'月 入金 '+yen(r.inc)+'円'+(prepay>0?'（前払'+yen(prepay)+'込）':'')+'</title></circle>';}).join('');
+  var dotsCost=rows.map(function(r,i){return '<circle cx="'+X(i)+'" cy="'+Y(r.cumCost)+'" r="3" fill="var(--bad)"><title>'+(+String(r.end).slice(5,7))+'月 累計原価 '+yen(r.cumCost)+'円（赤字 '+yen(r.def)+'円）</title></circle>';}).join('');
+  var xlab=rows.map(function(r,i){ return '<text x="'+X(i)+'" y="'+(H-9)+'" text-anchor="middle" font-size="10" fill="var(--sub)">'+(+String(r.end||'').slice(5,7))+'月</text>'; }).join('');
+  var L=rows[n-1];
+  var endCost='<text x="'+(X(n-1)+6)+'" y="'+Y(L.cumCost)+'" font-size="10.5" font-weight="700" fill="var(--bad)" dominant-baseline="middle">累計原価</text>';
+  var endInc='<text x="'+(X(n-1)+6)+'" y="'+Y(L.inc)+'" font-size="10.5" font-weight="700" fill="var(--acc)" dominant-baseline="middle">入金'+(prepay>0?'(前払込)':'')+'</text>';
+  var cap='<div style="font-size:11px;color:var(--sub);margin:10px 0 2px">① 累計原価と入金'+(prepay>0?'（前払金'+yen(prepay)+'が最初からある）':'')+'の推移（縦軸＝金額／横軸＝月）。<span style="color:var(--bad);font-weight:700">赤い部分＝原価が入金を逆転した「赤字」</span>（ここに利息がかかる）</div>';
+  return cap+'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block" role="img" aria-label="累計原価と入金の推移">'
+    +grid+prepayLine
+    +'<path d="'+gap+'" fill="var(--bad)" fill-opacity="0.14"/>'
+    +'<path d="M'+incPts.join(' L')+'" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linejoin="round"/>'
+    +'<path d="M'+costPts.join(' L')+'" fill="none" stroke="var(--bad)" stroke-width="2" stroke-linejoin="round"/>'
+    +dotsInc+dotsCost+xlab+endCost+endInc+'</svg>';
 }
 function calc(p){
   const r=rate(),contract=p.S,C=p.C;
@@ -733,8 +790,7 @@ function renderDetail(i){
     var honrai=a.landGross;
     var scen=[{k:'rec',name:'回収ベース',res:ri.main,desc:'入金＝<b>台帳の累計回収額</b>'}];
     if(ri.pub){
-      scen.push({k:'pre',name:'前払40%込み',res:ri.prepayS,desc:'入金＝累計回収＋<b>前払（請負×40%＝'+yen(ri.prepay)+'）</b>'});
-      scen.push({k:'full',name:'満額入金(請負)',res:ri.fullS,desc:'入金＝<b>請負金額を満額受領</b>と仮定'});
+      scen.push({k:'pre',name:'前払(公共)',res:ri.prepayS,desc:'公共の入金＝完了まで<b>前払（請負×40%＝'+yen(ri.prepay)+'）のみ</b>で横ばい、完了月に<b>残り60%</b>が入り満額。<span style="color:var(--sub)">※前払は台帳に出ないためシステムで付与</span>'});
     }
     function rowsHtml(res){ return res.rows.map(function(r){
       var fm=(String(r.end||'').slice(0,7)).replace('-','/');
@@ -750,7 +806,11 @@ function renderDetail(i){
       var tot='<div class="ke hl" style="margin-top:4px"><span class="lbl">利息 累計（参考）</span><span class="res" style="color:var(--bad)">'+yen(sc.res.interest)+'円</span>'
         +'<span class="op">／</span><span class="lbl">本来の粗利 '+(honrai<0?'▲':'')+yen(Math.abs(honrai))+' − 利息 ＝</span>'
         +'<span class="res gp'+(afterInt<0?' neg':'')+'">'+(afterInt<0?'▲':'')+yen(Math.abs(afterInt))+'円</span><span class="lbl">（利息控除後・参考）</span></div>';
-      var c=document.getElementById('refIntContent'); if(c) c.innerHTML=head+rowsHtml(sc.res)+tot;
+      var card=function(title,inner){ return '<div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0">'+(title?'<div style="font-weight:700;font-size:13px;margin-bottom:2px">'+title+'</div>':'')+inner+'</div>'; };
+      var c=document.getElementById('refIntContent'); if(c) c.innerHTML=head
+        +card('原価と入金の推移', refIntCrossChart(sc.res, k==='pre'?ri.prepay:0))
+        +card('利息の累計', refIntChart(sc.res))
+        +rowsHtml(sc.res)+tot;
       body.querySelectorAll('.ritab').forEach(function(b){ var on=b.dataset.k===k; b.style.cssText='margin-right:6px;margin-bottom:4px;padding:4px 11px;border-radius:7px;border:1px solid #cbd5e1;cursor:pointer;font-size:12px;'+(on?'background:#1f6f54;color:#fff;font-weight:700':'background:#fff;color:#64748b'); });
     }
     var tabs='';
