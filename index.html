@@ -410,9 +410,9 @@ function refInterest(p){
       cumCost = (m.ledger>0? m.ledger : cumCost+m.cost);         // 累計原価（台帳の月別累計。無ければ月原価の積上げ）
       const inc=income(m,idx);                                   // 入金
       const def=Math.max(0, cumCost-inc);                        // 赤字＝累計原価−入金
-      const base=(prevDef==null)?def:(prevDef+def)/2;           // (前月+今月の赤字)/2（1月目は当月のみ）
+      const base=(prevDef>0)?(prevDef+def)/2:def;               // 赤字の初月(前月が0/無)は当月の赤字そのもの、以降は(前月+今月)/2＝利息の計算元
       const mInt=Math.round(base*RATE/12);                       // 月利息（年利2%の月割り）
-      interest+=mInt; rows.push({end:m.end,cumCost,inc,def,mInt,interest}); prevDef=def;
+      interest+=mInt; rows.push({end:m.end,cumCost,inc,def,base,mInt,interest}); prevDef=def;
     });
     return {rows,interest};
   };
@@ -440,12 +440,17 @@ function refIntChart(res){
     return '<circle cx="'+X(i)+'" cy="'+Y(r.interest)+'" r="3.6" fill="var(--bad)"><title>'+mm+'：月利息 '+yen(r.mInt)+'円 ／ 利息累計 '+yen(r.interest)+'円（赤字 '+yen(r.def)+'円）</title></circle>'; }).join('');
   var xlab=rows.map(function(r,i){ return '<text x="'+X(i)+'" y="'+(H-9)+'" text-anchor="middle" font-size="10" fill="var(--sub)">'+(+String(r.end||'').slice(5,7))+'月</text>'; }).join('');
   var endLab='<text x="'+(X(n-1)+7)+'" y="'+Y(rows[n-1].interest)+'" font-size="11.5" font-weight="700" fill="var(--bad)" dominant-baseline="middle">'+yen(rows[n-1].interest)+'円</text>';
-  return '<div style="font-size:11px;color:var(--sub);margin:10px 0 2px">② 利息累計の推移（縦軸＝利息の累計／横軸＝月・点にカーソルで内訳）</div>'
+  // 各月の利息（その月の増分＝月利息）を点の上に表示
+  var mLab=rows.map(function(r,i){ if(!(r.mInt>0)) return '';
+    return '<text x="'+X(i)+'" y="'+(Y(r.interest)-8)+'" text-anchor="middle" font-size="9" font-weight="700" fill="var(--bad)" stroke="var(--card)" stroke-width="2.4" paint-order="stroke">+'+yen(r.mInt)+'</text>'; }).join('');
+  return '<div style="font-size:11px;color:var(--sub);margin:10px 0 2px">② 利息累計の推移（縦軸＝利息の累計／横軸＝月・＋○円が各月の利息）</div>'
+    +'<div style="font-size:11px;color:var(--sub);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;margin:0 0 8px;line-height:1.7">'
+      +'<b style="color:var(--ink)">各月の利息（＋○円）</b> ＝ 計算元 ×2%÷12。<span style="color:var(--bad);font-weight:700">計算元＝初月はその月の赤字、以降は(前月＋今月の赤字)÷2</span>。これを毎月足し上げた累計がこのグラフです。</div>'
     +'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block" role="img" aria-label="利息累計の推移">'
     +grid
     +'<path d="'+area+'" fill="var(--bad)" fill-opacity="0.12"/>'
     +'<path d="'+line+'" fill="none" stroke="var(--bad)" stroke-width="2" stroke-linejoin="round"/>'
-    +dots+xlab+endLab+'</svg>';
+    +dots+xlab+endLab+mLab+'</svg>';
 }
 /* ===== 累計原価 vs 入金（前払込）のクロスオーバー図：原価が入金を逆転した「赤字」を見せる（全工事・公共は前払が入金ベースに乗る） ===== */
 function refIntCrossChart(res, prepay){
@@ -460,23 +465,27 @@ function refIntCrossChart(res, prepay){
       +'<text x="'+(PL-6)+'" y="'+(yy+3.2)+'" text-anchor="end" font-size="9.5" fill="var(--sub)">'+(g===0?'0':tl(tv))+'</text>'; }
   grid+='<line x1="'+PL+'" y1="'+Y(0)+'" x2="'+PL+'" y2="'+PT+'" stroke="var(--line)" stroke-width="1"/>';
   var prepayLine=(prepay>0)?'<line x1="'+PL+'" y1="'+Y(prepay)+'" x2="'+(W-PR)+'" y2="'+Y(prepay)+'" stroke="var(--acc)" stroke-width="1" stroke-dasharray="5 3" opacity="0.7"/>'
-      +'<text x="'+(W-PR+4)+'" y="'+(Y(prepay)-4)+'" font-size="9" fill="var(--acc)">前払金 '+man(prepay)+'</text>':'';
+      +'<text x="'+(PL+5)+'" y="'+(Y(prepay)-5)+'" font-size="9" fill="var(--acc)">前払金 '+man(prepay)+'</text>':'';
   var costPts=rows.map(function(r,i){return X(i)+','+Y(r.cumCost);});
   var incPts=rows.map(function(r,i){return X(i)+','+Y(r.inc);});
   var gap='M'+costPts.join(' L')+' L'+incPts.slice().reverse().join(' L')+' Z';
   var dotsInc=rows.map(function(r,i){return '<circle cx="'+X(i)+'" cy="'+Y(r.inc)+'" r="3" fill="var(--acc)"><title>'+(+String(r.end).slice(5,7))+'月 入金 '+yen(r.inc)+'円'+(prepay>0?'（前払'+yen(prepay)+'込）':'')+'</title></circle>';}).join('');
   var dotsCost=rows.map(function(r,i){return '<circle cx="'+X(i)+'" cy="'+Y(r.cumCost)+'" r="3" fill="var(--bad)"><title>'+(+String(r.end).slice(5,7))+'月 累計原価 '+yen(r.cumCost)+'円（赤字 '+yen(r.def)+'円）</title></circle>';}).join('');
   var xlab=rows.map(function(r,i){ return '<text x="'+X(i)+'" y="'+(H-9)+'" text-anchor="middle" font-size="10" fill="var(--sub)">'+(+String(r.end||'').slice(5,7))+'月</text>'; }).join('');
+  // 各月の生の赤字（原価−入金）を点の位置に表示。利息の計算元ではなく、その月の赤字そのもの
+  var defLab=rows.map(function(r,i){ if(!(r.def>0)) return '';
+    var cy=(Y(r.cumCost)+Y(r.inc))/2;
+    return '<text x="'+X(i)+'" y="'+cy+'" text-anchor="middle" dominant-baseline="middle" font-size="9.5" font-weight="700" fill="var(--bad)" stroke="var(--card)" stroke-width="2.8" paint-order="stroke">赤字 '+man(r.def)+'</text>'; }).join('');
   var L=rows[n-1];
   var endCost='<text x="'+(X(n-1)+6)+'" y="'+Y(L.cumCost)+'" font-size="10.5" font-weight="700" fill="var(--bad)" dominant-baseline="middle">累計原価</text>';
   var endInc='<text x="'+(X(n-1)+6)+'" y="'+Y(L.inc)+'" font-size="10.5" font-weight="700" fill="var(--acc)" dominant-baseline="middle">入金'+(prepay>0?'(前払込)':'')+'</text>';
-  var cap='<div style="font-size:11px;color:var(--sub);margin:10px 0 2px">① 累計原価と入金'+(prepay>0?'（前払金'+yen(prepay)+'が最初からある）':'')+'の推移（縦軸＝金額／横軸＝月）。<span style="color:var(--bad);font-weight:700">赤い部分＝原価が入金を逆転した「赤字」</span>（ここに利息がかかる）</div>';
+  var cap='<div style="font-size:11px;color:var(--sub);margin:10px 0 2px">① 累計原価と入金'+(prepay>0?'（前払金'+yen(prepay)+'が最初からある）':'')+'の推移（縦軸＝金額／横軸＝月）。<span style="color:var(--bad);font-weight:700">赤い部分＝原価が入金を逆転した「赤字」</span>（中の金額＝その月の赤字）。<b>利息＝「初月はその月の赤字、以降は(前月＋今月の赤字)÷2」× 年利2%÷12 を毎月</b></div>';
   return cap+'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block" role="img" aria-label="累計原価と入金の推移">'
     +grid+prepayLine
     +'<path d="'+gap+'" fill="var(--bad)" fill-opacity="0.14"/>'
     +'<path d="M'+incPts.join(' L')+'" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linejoin="round"/>'
     +'<path d="M'+costPts.join(' L')+'" fill="none" stroke="var(--bad)" stroke-width="2" stroke-linejoin="round"/>'
-    +dotsInc+dotsCost+xlab+endCost+endInc+'</svg>';
+    +dotsInc+dotsCost+xlab+endCost+endInc+defLab+'</svg>';
 }
 function calc(p){
   const r=rate(),contract=p.S,C=p.C;
