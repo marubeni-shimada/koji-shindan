@@ -794,7 +794,7 @@ function renderDetail(i){
   (function(){
     var sec=document.getElementById('refIntSec'),body=document.getElementById('refIntBody'); if(!sec||!body)return;
     var ri=refInterest(p);
-    if(!ri.main.rows.length || ri.months<1){ sec.style.display='none'; return; }
+    if(!withKin || !ri.main.rows.length || ri.months<1){ sec.style.display='none'; return; }   // 利息なし（利息込みOFF）のときは利息詳細を出さない
     sec.style.display='';
     var honrai=a.landGross;
     var scen=[{k:'rec',name:'回収ベース',res:ri.main,desc:'入金＝<b>台帳の累計回収額</b>'}];
