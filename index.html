@@ -56,6 +56,25 @@ select,input[type=number]{background:var(--card);color:var(--ink);border:1px sol
 .rleg .rl b{color:var(--ink);font-weight:800}
 .rmeta{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--sub);margin-top:6px}
 .rmeta b{color:var(--ink)}
+/* 確かさチップ（実績/見込み/参考）＋縦の計算書 */
+.cred{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:800;padding:0 7px;border-radius:999px;line-height:1.7;white-space:nowrap;vertical-align:middle}
+.cred.real{background:var(--line);color:var(--sub)}
+.cred.est{background:transparent;border:1.4px solid var(--sub);color:var(--sub)}
+.cred.ref{background:transparent;border:1.4px dashed var(--sub);color:var(--sub);font-weight:700}
+.calc{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:2px 0}
+.calc .cl{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:13px}
+.calc .cl .op{width:16px;color:var(--sub);font-weight:800;text-align:center;flex:none;font-size:14px}
+.calc .cl .lb{flex:1;min-width:0}
+.calc .cl .lb .s{color:var(--sub);font-size:11px;margin-left:2px}
+.calc .cl .cr{flex:none}
+.calc .cl .am{flex:none;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;min-width:118px;text-align:right}
+.calc .cl .am.minus{color:var(--sub)}
+.calc .rule{border-top:1.5px solid var(--line);margin:3px 0}
+.calc .rule.strong{border-top:2px solid var(--ink)}
+.calc .cl.sum{padding:10px 0 5px}
+.calc .cl.sum .lb{font-weight:800;font-size:14px}
+.calc .cl.sum .am{font-weight:800;font-size:18px}
+.calc .cl.sum.ok .am{color:var(--ok)} .calc .cl.sum.bad .am{color:var(--bad)} .calc .cl.sum.ga .am{color:var(--ga)}
 /* 一覧テーブル */
 .sheet{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow-x:auto;overflow-y:hidden}
 table.lst{width:100%;border-collapse:collapse}
@@ -790,12 +809,24 @@ function renderDetail(i){
    +'<div class="n"><div class="lab">社内経費（×'+pct(a.r,a.r*100%1?1:0)+'）</div><div class="v" style="color:var(--ga)">'+man(GA)+'</div>'+cmp((a.useUri?'累計売上':'請負')+'×'+pct(a.r,a.r*100%1?1:0),'')+'</div>';
   const tot=C+GA;
   const nowNet=(S-tot)-(a.kinOn?a.risoku:0);   // 現時点の本来の粗利（利息込みモードのみ利息控除）
-  let keH='<div class="ke"><span class="lbl">'+revLbl+'</span><span class="num">'+yen(a.S)+'円</span><span class="op">×</span><span class="num">'+pct(a.r,a.r*100%1?1:0)+'</span><span class="op">＝</span><span class="res ga">'+yen(GA)+'円</span><span class="lbl">（社内経費）</span></div>'
-   +'<div class="ke"><span class="lbl">原価</span><span class="num">'+yen(C)+'円</span><span class="op">＋</span><span class="lbl">社内経費</span><span class="num ga">'+yen(GA)+'円</span><span class="op">＝</span><span class="res">'+yen(tot)+'円</span><span class="lbl">（合計仕入）</span></div>';
-  if(a.kinOn){ keH+='<div class="ke"><span class="lbl">立替</span><span class="num">'+yen(a.tateka)+'円</span><span class="op">×</span><span class="num">年利'+pct(kinri(),1)+'</span><span class="op">×</span><span class="num">'+a.years.toFixed(1)+'年</span><span class="op">＝</span><span class="res" style="color:var(--bad)">'+yen(a.risoku)+'円</span><span class="lbl">（利息）</span></div>'; }
-  keH+='<div class="ke hl"><span class="lbl">'+revLbl+'</span><span class="num">'+yen(S)+'円</span><span class="op">−</span><span class="lbl">仕入</span><span class="num">'+yen(tot)+'円</span>'+(a.kinOn?('<span class="op">−</span><span class="lbl">利息</span><span class="num">'+yen(a.risoku)+'円</span>'):'')+'<span class="op">＝</span><span class="res gp'+(nowNet<0?' neg':'')+'">'+(nowNet<0?'▲':'')+yen(Math.abs(nowNet))+'円</span><span class="lbl">（本来の粗利）※現時点</span></div>';
+  // 計算の内訳＝縦の計算書（上から引いて一番下に結果）。確かさチップ付き（売上/原価/社内経費/本来の粗利＝実績、利息＝参考）
+  const honraiGross=S-tot;                 // 現時点の本来の粗利（利息を引く前）
+  const cReal='<span class="cr"><span class="cred real">実績</span></span>', cRef='<span class="cr"><span class="cred ref">参考</span></span>';
+  let keH='<div class="calc">'
+    +'<div class="cl"><span class="op"></span><span class="lb">'+revLbl+'</span>'+cReal+'<span class="am">'+yen(S)+' 円</span></div>'
+    +'<div class="cl"><span class="op">−</span><span class="lb">原価<span class="s">（仕入など）</span></span>'+cReal+'<span class="am minus">− '+yen(C)+' 円</span></div>'
+    +'<div class="cl"><span class="op">−</span><span class="lb">社内経費<span class="s">（'+revLbl+'×'+pct(a.r,a.r*100%1?1:0)+'）</span></span>'+cReal+'<span class="am minus">− '+yen(GA)+' 円</span></div>'
+    +'<div class="rule strong"></div>'
+    +'<div class="cl sum '+(honraiGross<0?'bad':'ok')+'"><span class="op"></span><span class="lb">＝ 本来の粗利<span class="s">（現時点）</span></span>'+cReal+'<span class="am">'+(honraiGross<0?'▲':'')+yen(Math.abs(honraiGross))+' 円</span></div>';
+  if(a.kinOn){
+    keH+='<div class="rule"></div>'
+      +'<div class="cl"><span class="op">−</span><span class="lb">利息<span class="s">（立替'+yen(a.tateka)+'×年利'+pct(kinri(),1)+'×'+a.years.toFixed(1)+'年）</span></span>'+cRef+'<span class="am minus">− '+yen(a.risoku)+' 円</span></div>'
+      +'<div class="rule strong"></div>'
+      +'<div class="cl sum '+(nowNet<0?'bad':'ga')+'"><span class="op"></span><span class="lb">＝ 利息を引いた粗利</span>'+cRef+'<span class="am">'+(nowNet<0?'▲':'')+yen(Math.abs(nowNet))+' 円</span></div>';
+  }
+  keH+='</div>';
   // #2 社内経費のタイミング説明（原価は粗利より先に発生＝今月末の累計売上の社内経費は本来は先月末までの原価に対応）
-  keH+='<div class="ke" style="margin-top:4px;font-size:11px;color:var(--sub);line-height:1.5">※ 社内経費は「選択中の売上基準×'+pct(a.r,1)+'」で<b>累計表示</b>。原価は粗利より先に発生するため、<b>今月末の累計売上から出した社内経費は、本来は先月末までの原価に対応</b>するものです（累計での概算表示）。</div>';
+  keH+='<div style="margin-top:8px;font-size:11px;color:var(--sub);line-height:1.5">※ 社内経費は「'+revLbl+'×'+pct(a.r,1)+'」で<b>累計表示</b>。原価は粗利より先に発生するため、今月末の'+revLbl+'から出した社内経費は本来は先月末までの原価に対応（累計での概算）。／ <b>実績</b>＝台帳の確定値、<b>参考</b>＝利息（前提次第の目安）。</div>';
   document.getElementById('keishiki').innerHTML=keH;
   // 🏦 利息（参考値）＝赤字(累計原価−入金)に年利2%。公共は請負×40%前払を入金に上乗せ
   (function(){
