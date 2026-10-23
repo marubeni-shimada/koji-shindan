@@ -450,10 +450,10 @@ function refInterest(p){
 }
 /* ===== 利息累計の累積グラフ（単一系列・インラインSVG・ダークはCSS変数で追従） ===== */
 function refIntChart(res){
-  var rows=(res&&res.rows)||[]; if(rows.length<2) return '';
+  var rows=(res&&res.rows)||[]; if(rows.length<1) return '';
   if(rows[rows.length-1].interest<=0) return '<div style="font-size:11px;color:var(--sub);margin:6px 0">この前提では赤字（原価＞入金）が発生せず、利息は0円です。</div>';
   var W=560,H=160,PT=16,PB=28,PL=52,PR=66, n=rows.length, maxI=Math.max(1,rows[n-1].interest);
-  var X=function(i){ return PL+(W-PL-PR)*(n>1?i/(n-1):0); };
+  var X=function(i){ return PL+(W-PL-PR)*(n>1?i/(n-1):0.5); };
   var Y=function(v){ return H-PB-(H-PT-PB)*(v/maxI); };
   var tl=function(v){ return v>=1e6?man(Math.round(v)):(v>=1e4?(v/1e4).toFixed(1)+'万':yen(Math.round(v))); };
   var grid=''; for(var g=0;g<=3;g++){ var tv=maxI*g/3, yy=Y(tv);
@@ -469,7 +469,7 @@ function refIntChart(res){
   // 各月の利息（その月の増分＝月利息）を点の上に表示
   var mLab=rows.map(function(r,i){ if(!(r.mInt>0)) return '';
     return '<text x="'+X(i)+'" y="'+(Y(r.interest)-8)+'" text-anchor="middle" font-size="9" font-weight="700" fill="var(--bad)" stroke="var(--card)" stroke-width="2.4" paint-order="stroke">+'+yen(r.mInt)+'</text>'; }).join('');
-  return '<div style="font-size:11px;color:var(--sub);margin:10px 0 2px">② 利息累計の推移（縦軸＝利息の累計／横軸＝月・＋○円が各月の利息）</div>'
+  return '<div style="font-size:11px;color:var(--sub);margin:10px 0 2px">② 利息累計の推移（縦軸＝利息の累計／横軸＝月・＋○円が各月の利息）'+(n===1?'<span style="color:var(--warn)">　※ 1ヶ月分のみ：点で表示</span>':'')+'</div>'
     +'<div style="font-size:11px;color:var(--sub);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;margin:0 0 8px;line-height:1.7">'
       +'<b style="color:var(--ink)">各月の利息（＋○円）</b> ＝ 計算元 ×2%÷12。<span style="color:var(--bad);font-weight:700">計算元＝初月はその月の赤字、以降は(前月＋今月の赤字)÷2</span>。これを毎月足し上げた累計がこのグラフです。</div>'
     +'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block" role="img" aria-label="利息累計の推移">'
@@ -480,10 +480,10 @@ function refIntChart(res){
 }
 /* ===== 累計原価 vs 入金（前払込）のクロスオーバー図：原価が入金を逆転した「赤字」を見せる（全工事・公共は前払が入金ベースに乗る） ===== */
 function refIntCrossChart(res, prepay){
-  var rows=(res&&res.rows)||[]; if(rows.length<2) return '';
+  var rows=(res&&res.rows)||[]; if(rows.length<1) return '';
   var W=560,H=182,PT=16,PB=28,PL=52,PR=80, n=rows.length;
   var maxV=Math.max.apply(null, rows.map(function(r){return Math.max(r.cumCost,r.inc);}).concat([1]));
-  var X=function(i){ return PL+(W-PL-PR)*(n>1?i/(n-1):0); };
+  var X=function(i){ return PL+(W-PL-PR)*(n>1?i/(n-1):0.5); };
   var Y=function(v){ return H-PB-(H-PT-PB)*(v/maxV); };
   var tl=function(v){ return v>=1e6?man(Math.round(v)):(v>=1e4?(v/1e4).toFixed(1)+'万':yen(Math.round(v))); };
   var grid=''; for(var g=0;g<=3;g++){ var tv=maxV*g/3, yy=Y(tv);
@@ -505,9 +505,11 @@ function refIntCrossChart(res, prepay){
   var L=rows[n-1];
   var endCost='<text x="'+(X(n-1)+6)+'" y="'+Y(L.cumCost)+'" font-size="10.5" font-weight="700" fill="var(--bad)" dominant-baseline="middle">累計原価</text>';
   var endInc='<text x="'+(X(n-1)+6)+'" y="'+Y(L.inc)+'" font-size="10.5" font-weight="700" fill="var(--acc)" dominant-baseline="middle">入金'+(prepay>0?'(前払込)':'')+'</text>';
-  var cap='<div style="font-size:11px;color:var(--sub);margin:10px 0 2px">① 累計原価と入金'+(prepay>0?'（前払金'+yen(prepay)+'が最初からある）':'')+'の推移（縦軸＝金額／横軸＝月）。<span style="color:var(--bad);font-weight:700">赤い部分＝原価が入金を逆転した「赤字」</span>（中の金額＝その月の赤字）。<b>利息＝「初月はその月の赤字、以降は(前月＋今月の赤字)÷2」× 年利2%÷12 を毎月</b></div>';
+  // 1ヶ月分のときは線が引けないので、原価と入金の点を縦線でつないで赤字を見せる
+  var conn=(n===1 && rows[0].def>0)?'<line x1="'+X(0)+'" y1="'+Y(rows[0].cumCost)+'" x2="'+X(0)+'" y2="'+Y(rows[0].inc)+'" stroke="var(--bad)" stroke-width="2.5"/>':'';
+  var cap='<div style="font-size:11px;color:var(--sub);margin:10px 0 2px">① 累計原価と入金'+(prepay>0?'（前払金'+yen(prepay)+'が最初からある）':'')+'の推移（縦軸＝金額／横軸＝月）。<span style="color:var(--bad);font-weight:700">赤い部分＝原価が入金を逆転した「赤字」</span>（中の金額＝その月の赤字）。<b>利息＝「初月はその月の赤字、以降は(前月＋今月の赤字)÷2」× 年利2%÷12 を毎月</b>'+(n===1?'<br><span style="color:var(--warn)">※ 1ヶ月分のみ：点で表示（推移の線は2ヶ月目から）</span>':'')+'</div>';
   return cap+'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block" role="img" aria-label="累計原価と入金の推移">'
-    +grid+prepayLine
+    +grid+prepayLine+conn
     +'<path d="'+gap+'" fill="var(--bad)" fill-opacity="0.14"/>'
     +'<path d="M'+incPts.join(' L')+'" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linejoin="round"/>'
     +'<path d="M'+costPts.join(' L')+'" fill="none" stroke="var(--bad)" stroke-width="2" stroke-linejoin="round"/>'
