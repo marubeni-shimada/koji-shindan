@@ -47,8 +47,15 @@ select,input[type=number]{background:var(--card);color:var(--ink);border:1px sol
 .ritem.bad{border-left:4px solid var(--bad)}.ritem.warn{border-left:4px solid var(--warn)}.ritem:hover{filter:brightness(.98)}
 .ritem .rgo{color:var(--acc);font-weight:800;font-size:11px;margin-left:4px}
 .ralert .rnote{font-size:11px;color:var(--sub);margin-top:8px;line-height:1.6}
-.rbar{display:flex;height:26px;border-radius:8px;overflow:hidden;border:1px solid var(--line);margin:6px 0}
-.rbar .rs{display:flex;align-items:center;padding:0 9px;color:#fff;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden}
+.rbar{display:flex;height:16px;border-radius:8px;overflow:hidden;border:1px solid var(--line);margin:8px 0 0;background:var(--bg)}
+.rbar .rs{height:100%}
+.rbar .rs+.rs{border-left:2px solid var(--card)}
+.rleg{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;margin-top:9px}
+.rleg .rl{display:inline-flex;align-items:center;gap:6px;color:var(--sub)}
+.rleg .rl i{width:11px;height:11px;border-radius:3px;flex:none}
+.rleg .rl b{color:var(--ink);font-weight:800}
+.rmeta{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--sub);margin-top:6px}
+.rmeta b{color:var(--ink)}
 /* 一覧テーブル */
 .sheet{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow-x:auto;overflow-y:hidden}
 table.lst{width:100%;border-collapse:collapse}
@@ -863,9 +870,15 @@ function renderDetail(i){
   document.getElementById('dfoot').innerHTML='※ 目標＝台帳の目標純利益。着地見込み＝「予算どおり」と「原価ペース」の中間。社内経費＝請負×'+pct(a.r,1)+'。'+(a.kinOn?'利息＝立替'+yen(a.tateka)+'×年利'+pct(kinri(),1)+'×'+a.years.toFixed(1)+'年＝'+yen(a.risoku)+'円を控除（概算）。':'');
   // 回収の状況（情報表示のみ・アラートなし）
   const Szei=a.Szei,recD=a.rec,mishu=a.mishu;
+  const recPct=Szei>0?recD/Szei*100:0, misPct=Szei>0?mishu/Szei*100:0;
   document.getElementById('recBody').innerHTML=
-    '<div class="rbar"><div class="rs" style="width:'+Math.max(2,recD/Szei*100)+'%;background:var(--ok)" title="入金 '+yen(recD)+'">入金 '+yen(recD)+'</div><div class="rs" style="width:'+Math.max(2,mishu/Szei*100)+'%;background:var(--bad)" title="未収 '+yen(mishu)+'">未収 '+yen(mishu)+'</div></div>'
-    +'<div style="display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--sub);margin-top:6px"><span>請負(税込) <b style="color:var(--ink)">'+yen(Szei)+'</b></span><span>回収率 <b style="color:var(--ink)">'+pct(a.kaishu)+'</b></span><span>工期 <b style="color:var(--ink)">'+(a.start.getMonth()+1)+'/'+a.start.getDate()+'〜'+(a.fin.getMonth()+1)+'/'+a.fin.getDate()+(a.done?'（完成）':'（進捗'+pct(a.timeR,0)+'）')+'</b></span></div>';
+    '<div class="rbar">'
+      +(recD>0?'<div class="rs" style="width:'+Math.max(2,recPct)+'%;background:var(--ok)"></div>':'')
+      +(mishu>0?'<div class="rs" style="width:'+Math.max(2,misPct)+'%;background:var(--bad)"></div>':'')
+    +'</div>'
+    +'<div class="rleg"><span class="rl"><i style="background:var(--ok)"></i>入金済 <b>'+yen(recD)+'円</b>（回収率 '+pct(a.kaishu)+'）</span>'
+      +'<span class="rl"><i style="background:var(--bad)"></i>未収 <b>'+yen(mishu)+'円</b></span></div>'
+    +'<div class="rmeta"><span>請負(税込) <b>'+yen(Szei)+'円</b></span><span>工期 <b>'+(a.start.getMonth()+1)+'/'+a.start.getDate()+'〜'+(a.fin.getMonth()+1)+'/'+a.fin.getDate()+(a.done?'（完成）':'（進捗'+pct(a.timeR,0)+'）')+'</b></span></div>';
   // 利息の計算根拠（利息込みモード時のみ）
   const risSec=document.getElementById('risokuSec');
   if(withKin){ risSec.style.display='';
