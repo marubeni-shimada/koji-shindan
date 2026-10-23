@@ -96,13 +96,13 @@ table.lst .go{color:var(--acc);font-weight:900}
 table.lst tr.total td{background:var(--bg);font-weight:900;border-top:2px solid var(--line)}
 /* ===== 一覧カード（事務的さを消す見せ方・2026-10-14） ===== */
 .clist{display:flex;flex-direction:column;gap:10px}
-.crow{display:flex;align-items:center;gap:18px;border:1px solid var(--line);border-radius:15px;padding:16px 20px 16px 22px;cursor:pointer;position:relative;overflow:hidden}
+.crow{display:flex;align-items:center;gap:18px;border:1px solid var(--line);border-radius:15px;padding:16px 20px 16px 22px;cursor:pointer;position:relative;overflow:hidden;transition:box-shadow .15s ease,transform .15s ease,border-color .15s ease}
 .crow.ok{background:var(--card)}
 .crow.warn{background:linear-gradient(90deg,var(--warnbg),var(--card) 62%)}
 .crow.bad{background:linear-gradient(90deg,var(--badbg),var(--card) 62%)}
 .crow::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px}
 .crow.ok::before{background:var(--ok)}.crow.warn::before{background:var(--warn)}.crow.bad::before{background:var(--bad)}
-.crow:hover{box-shadow:0 7px 24px rgba(30,45,80,.13)}
+.crow:hover{box-shadow:0 12px 34px rgba(30,45,80,.28);border-color:var(--acc);transform:translateY(-2px)}
 .crow .main{flex:1;min-width:0}
 .crow .rhead{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .crow .nm{font-size:15.5px;font-weight:800;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
