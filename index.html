@@ -593,7 +593,7 @@ function renderList(){
        +'</div>'
      +'</div>'
      +'<div class="chero">'
-       +'<div class="gpbox"><div class="clab">本来の粗利</div><div class="cval big '+(loss?'bad':'ok')+'">'+(loss?'▲':'')+'<span class="cu" data-v="'+Math.abs(a.land)+'">'+man(Math.abs(a.land))+'</span><span class="u"> 円</span></div></div>'
+       +'<div class="gpbox"><div class="clab">本来の粗利'+(withKin&&a.risoku>0?'<span style="font-weight:400;color:var(--sub)">（利息込み）</span>':'')+'</div><div class="cval big '+(loss?'bad':'ok')+'">'+(loss?'▲':'')+'<span class="cu" data-v="'+Math.abs(a.land)+'">'+man(Math.abs(a.land))+'</span><span class="u"> 円</span></div>'+((withKin&&a.risoku>0)?'<div class="cint" style="font-size:11px;color:var(--ga);font-weight:700;margin-top:2px">利息 ▲'+man(a.risoku)+'円<span style="color:var(--sub);font-weight:400">（月'+yen(Math.round(a.tateka*kinri()/12))+'円）</span></div>':'')+'</div>'
        +'<div class="cgauge" data-fill="'+fill+'" data-state="'+a.cls+'" style="background:conic-gradient('+gcol+' '+(fill*360)+'deg, var(--line) 0)"><i class="'+a.cls+'">'+rtxt+'<span>粗利率</span></i></div>'
      +'</div>'
      +'</div>';};
@@ -786,7 +786,7 @@ function renderFYCover(){
 }
 const _reduceM=matchMedia('(prefers-reduced-motion:reduce)').matches;let _animBig=false;
 function countBig(el,to){const neg=to<0,abs=Math.abs(to),fmt=v=>(neg?'▲':'')+man(v)+'円';if(_reduceM){el.textContent=fmt(abs);return;}const dur=620,t0=performance.now();(function s(now){const p=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-p,3);el.textContent=fmt(abs*e);if(p<1)requestAnimationFrame(s);})(performance.now());}
-function openDetail(i){curDetail=i;_animBig=true;document.getElementById('list').style.display='none';{const dr=document.getElementById('drop');if(dr)dr.style.display='none';}document.getElementById('detail').style.display='block';renderDetail(i);scrollTo(0,0);}
+function openDetail(i){curDetail=i;_animBig=true;window.__lsY=window.scrollY||document.documentElement.scrollTop||0;document.getElementById('list').style.display='none';{const dr=document.getElementById('drop');if(dr)dr.style.display='none';}document.getElementById('detail').style.display='block';renderDetail(i);scrollTo(0,0);}
 function renderDetail(i){
   const a=calc(P[i]),p=a.p,S=a.S,GA=a.GA,C=a.C,tgt=a.tgt,land=a.land,diff=a.diff;
   const revLbl=a.useUri?'累計売上':'請負';
@@ -947,7 +947,7 @@ document.getElementById('list').addEventListener('click',e=>{const c=e.target.cl
 (function(){const s=document.getElementById('fySel');if(s)s.addEventListener('change',e=>{selFY=+e.target.value;renderFYCover();});})();
 window.addEventListener('beforeprint',()=>{const h=document.getElementById('prHdr');if(!h)return;const inDetail=document.getElementById('detail').style.display==='block';h.textContent='工事台帳分析'+(inDetail?'（工事詳細）':(selFY?'　'+selFY+'年度':''))+'　印刷日 '+new Date().toLocaleDateString('ja-JP');});
 ['printBtn','printBtn2','printBtn3'].forEach(id=>{const b=document.getElementById(id);if(b)b.addEventListener('click',()=>window.print());});
-document.getElementById('back').onclick=()=>{curDetail=null;document.getElementById('detail').style.display='none';{const dr=document.getElementById('drop');if(dr)dr.style.display='';}document.getElementById('list').style.display='block';renderList();scrollTo(0,0);};
+document.getElementById('back').onclick=()=>{curDetail=null;document.getElementById('detail').style.display='none';{const dr=document.getElementById('drop');if(dr)dr.style.display='';}document.getElementById('list').style.display='block';renderList();var y=window.__lsY||0;scrollTo(0,y);requestAnimationFrame(function(){scrollTo(0,y);});};
 document.getElementById('more').onclick=function(){const d=document.getElementById('dd');d.classList.toggle('open');this.textContent=d.classList.contains('open')?'− 詳細を閉じる':'＋ 詳細（計算の内訳・打ち手）を見る';};
 document.getElementById('rate').oninput=()=>{renderList();if(curDetail!=null)renderDetail(curDetail);};
 document.getElementById('kinri').oninput=()=>{renderList();if(curDetail!=null)renderDetail(curDetail);};
